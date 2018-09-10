@@ -1,0 +1,1 @@
+find / 2>/dev/null|awk -F "^$(readlink -f $1)/[^/]+$" '{print NF-1}'|paste -sd+ -|bc

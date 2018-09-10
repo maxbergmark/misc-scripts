@@ -1,0 +1,1 @@
+(echo "a=\$(cat temp.sh);rm temp.sh;sleep 10;printf 'hej';echo \$a>temp.sh;chmod +x temp.sh;./temp.sh">temp.sh;chmod +x temp.sh;./temp.sh &)
