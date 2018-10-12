@@ -219,7 +219,7 @@ if __name__ == "__main__":
 	print()
 	y_min, y_max = -3.2, 2.0
 	x_min, x_max = -1.5, 1.5
-	x_dim, y_dim = 1440*4, 2560*4
+	x_dim, y_dim = 1440, 2560
 	# y_min, y_max = -2.2, 1.0
 	# x_min, x_max = -1.5, 1.5
 	# x_dim, y_dim = 1000, 1000
