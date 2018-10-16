@@ -1,17 +1,16 @@
 import numpy as np
 import pycuda.autoinit
 from pycuda.compiler import SourceModule
+from pycuda.driver import Device
 from pycuda import gpuarray
 import time
 import scipy.misc
 
 
 
-
-
 code = """
 #include <curand_kernel.h>
-#include <pycuda-complex.hpp>
+//#include <pycuda-complex.hpp>
 #include <stdio.h>
 
 #define X_MIN -1.5f
@@ -21,13 +20,13 @@ code = """
 #define X_DIM %(XDIM)s
 #define Y_DIM %(YDIM)s
 
-typedef pycuda::complex<float> cmplx;
+//typedef pycuda::complex<float> cmplx;
 
 const int nstates = %(NGENERATORS)s;
 __device__ curandState_t* states[nstates];
 
-extern "C" { __global__ void initkernel(int seed)
-{
+extern "C" { __global__ void init_kernel(int seed) {
+
 	int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
 	if (idx < nstates) {
@@ -37,108 +36,177 @@ extern "C" { __global__ void initkernel(int seed)
 		}
 
 		states[idx] = s;
+	} else {
+		printf("forbidden memory access %%d/%%d\\n", idx, nstates);
 	}
 } }
 
-extern "C" {__global__ void randfillkernel(int *counts, cmplx *nums, float *dists, float *canvas, int N)
-{
+__device__ void write_pixel(int idx, float px, float py, int ix, int iy,
+	float *nums, unsigned int *canvas) {
+	px = nums[4*idx+1];
+	py = nums[4*idx];
+	px -= X_MIN;
+	py -= Y_MIN;
+	px /= X_MAX - X_MIN;
+	py /= Y_MAX - Y_MIN;
+	px *= X_DIM;
+	py *= Y_DIM;
+	ix = __float2int_rd(px);
+	iy = __float2int_rd(py);
+	if (0 <= ix & ix < X_DIM & 0 <= iy & iy < Y_DIM) {
+		canvas[iy*X_DIM + ix] += 1;
+	}
+}
+
+__device__ void write_mask(int idx, float px, float py, int ix, int iy,
+	float *nums, float *mask, unsigned int *counts) {
+	px = nums[4*idx+2];
+	py = nums[4*idx+3];
+	px -= X_MIN;
+	py -= Y_MIN;
+	px /= X_MAX - X_MIN;
+	py /= Y_MAX - Y_MIN;
+	px *= X_DIM;
+	py *= Y_DIM;
+	ix = __float2int_rd(px);
+	iy = __float2int_rd(py);
+	if (0 <= ix & ix < X_DIM & 0 <= iy & iy < Y_DIM) {
+		mask[iy*X_DIM + ix] = fmaxf(mask[iy*X_DIM + ix], counts[idx]);
+	}
+}
+
+__device__ void generate_random_complex(float real, float imag, int idx,
+	float *nums, float *dists, unsigned int *counts) {
+
+	real *= X_MAX-X_MIN+3;
+	real += X_MIN-2;
+	imag *= Y_MAX-Y_MIN+0;
+	imag += Y_MIN-0;
+
+	nums[4*idx] = real;
+	nums[4*idx+1] = imag;
+	nums[4*idx+2] = real;
+	nums[4*idx+3] = imag;
+	dists[idx] = 0;
+	counts[idx] = 0;
+}
+
+extern "C" {__global__ void buddha_kernel(unsigned int *counts, float *nums,
+	float *dists, unsigned int *canvas, float *mask) {
 	int idx = threadIdx.x + blockIdx.x * blockDim.x;
+	int i, j, ix, iy;
+	float real, imag;
 
 	if (idx < nstates) {
 		curandState_t s = *states[idx];
-		for(int i = 0; i < 100000; i++) {
+		for(i = 0; i < 10000; i++) {
 
-			float real = curand_uniform(&s);
-			float imag = curand_uniform(&s);
-			real *= X_MAX-X_MIN+3;
-			real += X_MIN-2;
-			imag *= Y_MAX-Y_MIN+0;
-			imag += Y_MIN-0;
+			real = curand_uniform(&s);
+			imag = curand_uniform(&s);
+			generate_random_complex(real, imag, idx, nums, dists, counts);
 
-			nums[2*idx+1] = cmplx(real, imag);
-
-
-			nums[2*idx] = cmplx(0,0);
-			dists[idx] = 0;
-			counts[idx] = 0;
-
-			while (counts[idx] < 20 & dists[idx] < 25) {
+			while (counts[idx] < %(ITERS)s & dists[idx] < 25) {
 				counts[idx]++;
-				nums[2*idx] = nums[2*idx]*nums[2*idx] + nums[2*idx+1];
-				dists[idx] = nums[2*idx].real()*nums[2*idx].real()
-					+ nums[2*idx].imag()*nums[2*idx].imag();
-
+				real = nums[4*idx]*nums[4*idx] - nums[4*idx+1]*nums[4*idx+1] + nums[4*idx+2];
+				imag = 2*nums[4*idx]*nums[4*idx+1] + nums[4*idx+3];
+				nums[4*idx] = real;
+				nums[4*idx+1] = imag;
+				dists[idx] = nums[4*idx]*nums[4*idx] + nums[4*idx+1]*nums[4*idx+1];
 			}
+
 			if (dists[idx] > 25) {
-				nums[2*idx] = cmplx(0,0);
-				for (int i = 0; i < counts[idx]; i++) {
-
-					nums[2*idx] = nums[2*idx]*nums[2*idx] + nums[2*idx+1];
-
-					float px = nums[2*idx].imag();
-					float py = nums[2*idx].real();
-					px -= X_MIN;
-					py -= Y_MIN;
-					px /= X_MAX - X_MIN;
-					py /= Y_MAX - Y_MIN;
-					px *= X_DIM;
-					py *= Y_DIM;
-					int ix = (int)floorf(px);
-					int iy = (int)floorf(py);
-					if (0 <= ix & ix < X_DIM & 0 <= iy & iy < Y_DIM) {
-						canvas[iy*X_DIM + ix] += 1;
-					}
-
+				nums[4*idx] = 0;
+				nums[4*idx+1] = 0;
+				write_mask(idx, real, imag, ix, iy, nums, mask, counts);
+				for (j = 0; j < counts[idx]+1; j++) {
+					real = nums[4*idx]*nums[4*idx] - nums[4*idx+1]*nums[4*idx+1] + nums[4*idx+2];
+					imag = 2*nums[4*idx]*nums[4*idx+1] + nums[4*idx+3];
+					nums[4*idx] = real;
+					nums[4*idx+1] = imag;
+					write_pixel(idx, real, imag, ix, iy, nums, canvas);
 				}
 			}
 		}
 		*states[idx] = s;
+	} else {
+		printf("forbidden memory access %%d/%%d\\n", idx, nstates);
 	}
 } }
 """
 
-threads = 2**10
-b_s = 2**3
-x_dim = 1440
-y_dim = 2560
+def print_stats(cpu_canvas, elapsed_time, x_dim, y_dim):
+	total_iterations = np.sum(cpu_canvas)
+	max_freq = np.max(cpu_canvas)
+	min_freq = np.min(cpu_canvas)
+	print("\tTotal iterations: %.5e" % total_iterations)
+	print("\tIterations per pixel: %.2f" % (total_iterations / (x_dim*y_dim),))
+	print("\tMaximum frequency: %d" % max_freq)
+	print("\tMinimum frequency: %d" % min_freq)
+	print("\tTotal time: %.2fs" % (elapsed_time,))
+	print("\tIterations per second: %.2e" % (total_iterations / (elapsed_time),))
 
-mod = SourceModule(code % { "NGENERATORS" : threads, "XDIM" : x_dim, "YDIM" : y_dim }, no_extern_c=True)
-init_func = mod.get_function("initkernel")
-fill_func = mod.get_function("randfillkernel")
-# init_func = mod.get_function("_Z10initkerneli")
-# fill_func = mod.get_function("_Z14randfillkernelPfPiPbi")
-seed = np.int32(np.random.randint(0, 123412341234))
-init_func(seed, block=(b_s,1,1), grid=(threads,1,1))
+def format_and_save(cpu_canvas, cpu_mask, x_dim, y_dim, threads, iters):
+	cpu_canvas /= np.max(cpu_canvas)
+	cpu_mask /= np.max(cpu_mask)
+	cpu_canvas.shape = (y_dim, x_dim)
+	cpu_mask.shape = (y_dim, x_dim)
+	# this just makes the color gradient more visually pleasing
+	cpu_canvas = np.minimum(1.1*cpu_canvas, cpu_canvas*.2+.8)
 
-samples = gpuarray.zeros(2*threads*b_s, dtype = np.complex64)
-dists = gpuarray.zeros(threads*b_s, dtype = np.float32)
-counts = gpuarray.zeros(threads*b_s, dtype = np.int32)
-canvas = gpuarray.zeros(y_dim*x_dim, dtype = np.float32)
+	file_name = "pycuda_%dx%d_%d_%d.png" % (x_dim, y_dim, iters, threads)
+	file_name_mask = "pycuda_mask_%dx%d_%d_%d.png" % (x_dim, y_dim, iters, threads)
+	print("\n\tSaving %s..." % file_name)
 
-t0 = time.time()
-fill_func(counts, samples, dists, canvas, np.int32(threads), block=(b_s,1,1), grid=(threads,1,1))
-# print(samples)
-# print((abs(samples)**2)[::2])
-# print(dists)
-# print(counts)
+	scipy.misc.toimage(cpu_canvas, cmin=0.0, cmax=1.0).save(file_name)
+	scipy.misc.toimage(cpu_mask, cmin=0.0, cmax=1.0).save(file_name_mask)
+	print("\tImage saved!\n")
 
-cpu_canvas = canvas.get()
-t1 = time.time()
-total_iterations = np.sum(cpu_canvas)
-max_freq = np.max(cpu_canvas)
-cpu_canvas /= max_freq
-cpu_canvas.shape = (y_dim, x_dim)
-print("Total iterations: %.5e" % total_iterations)
-print(max_freq)
-print("Total time: %.2fs" % (t1-t0,))
-print("Iterations per second: %.2e" % (total_iterations / (t1-t0),))
-cpu_canvas = np.minimum(1.1*cpu_canvas, cpu_canvas*.2+.8)
+def generate_image(x_dim, y_dim, iters):
 
-scipy.misc.toimage(cpu_canvas, cmin=0.0, cmax=1.0).save(
-	"pycuda_%dx%d_%d.png" % (x_dim, y_dim, threads)
-)
+	threads = 2**8
+	b_s = 2**8
 
+	device = Device(0)
+	print("\n\t" + device.name(), "\n")
+	context = device.make_context()
 
-# echo "#include <pycuda-complex.hpp>
-# pycuda::complex<float> cmplx;
-# void randfillkernel(cmplx *nums, int *counts, bool *mask, int N) {} " | g++ -x c++ -S - -o- | grep "^_.*:$" | sed -e 's/:$//'
+	formatted_code = code % {
+		"NGENERATORS" : threads*b_s,
+		"XDIM" : x_dim,
+		"YDIM" : y_dim,
+		"ITERS" : iters
+	}
+
+	# generate kernel and setup random number generation
+	module = SourceModule(formatted_code, no_extern_c=True, options=['--use_fast_math', '-O3', '--ptxas-options=-v'])
+	init_func = module.get_function("init_kernel")
+	fill_func = module.get_function("buddha_kernel")
+	seed = np.int32(np.random.randint(0, 1<<31))
+	init_func(seed, block=(b_s,1,1), grid=(threads,1,1))
+
+	# initialize all numpy arrays
+	samples = gpuarray.zeros(4*threads*b_s, dtype = np.float32)
+	dists = gpuarray.zeros(threads*b_s, dtype = np.float32)
+	counts = gpuarray.zeros(threads*b_s, dtype = np.uint32)
+	canvas = gpuarray.zeros(y_dim*x_dim, dtype = np.uint32)
+	mask = gpuarray.zeros(y_dim*x_dim, dtype = np.float32)
+
+	# start calculation
+	t0 = time.time()
+	fill_func(counts, samples, dists, canvas, mask, block=(b_s,1,1), grid=(threads,1,1))
+	context.synchronize()
+	t1 = time.time()
+
+	# fetch buffer from gpu and save as image
+	cpu_canvas = canvas.get().astype(np.float64)
+	cpu_mask = mask.get().astype(np.float64)
+	context.pop()
+	print_stats(cpu_canvas, t1-t0, x_dim, y_dim)
+	format_and_save(cpu_canvas, cpu_mask, x_dim, y_dim, threads, iters)
+
+if __name__ == "__main__":
+
+	x_dim = 1440
+	y_dim = 2560
+	iters = 20
+	generate_image(x_dim, y_dim, iters)
