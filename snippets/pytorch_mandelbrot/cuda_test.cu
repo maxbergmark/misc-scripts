@@ -50,7 +50,8 @@ void to_pixel(float &px, float &py, int &ix, int &iy) {
 	iy = __float2int_rd(py);
 }
 
-__device__ void write_pixel(int idx, float px, float py, int ix, int iy,
+__device__
+void write_pixel(int idx, float px, float py, int ix, int iy,
 	float4 *z, unsigned int *canvas) {
 	px = z[idx].y;
 	py = z[idx].x;
