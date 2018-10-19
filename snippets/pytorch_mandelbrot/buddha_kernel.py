@@ -18,9 +18,9 @@ code = """
 #define Y_MAX 2.0f
 
 #define X_MIN_SAMPLE -2.1f
-#define X_MAX_SAMPLE 1.5f
-#define Y_MIN_SAMPLE -2.0f
-#define Y_MAX_SAMPLE 2.0f
+#define X_MAX_SAMPLE 1.1f
+#define Y_MIN_SAMPLE -1.8f
+#define Y_MAX_SAMPLE 1.8f
 
 #define X_DIM %(XDIM)s
 #define Y_DIM %(YDIM)s
@@ -71,10 +71,6 @@ __device__
 void generate_random_complex(float real, float imag, int idx,
 	float4 *z, float *dists, unsigned int *counts) {
 
-//	real *= X_MAX-X_MIN+3;
-//	real += X_MIN-2;
-//	imag *= Y_MAX-Y_MIN+0;
-//	imag += Y_MIN-0;
 	real *= X_MAX_SAMPLE-X_MIN_SAMPLE;
 	real += X_MIN_SAMPLE;
 	imag *= Y_MAX_SAMPLE-Y_MIN_SAMPLE;
@@ -162,7 +158,7 @@ def format_and_save(cpu_canvas, x_dim, y_dim, threads, iters):
 	cpu_canvas /= np.max(cpu_canvas)
 	cpu_canvas.shape = (y_dim, x_dim)
 	# this just makes the color gradient more visually pleasing
-	cpu_canvas = np.minimum(2.5*cpu_canvas, cpu_canvas*.2+.8)
+	cpu_canvas = np.minimum(20.5*cpu_canvas, cpu_canvas*.2+.8)
 
 	file_name = "pycuda_%dx%d_%d_%d.png" % (x_dim, y_dim, iters, threads)
 	print("\n\tSaving %s..." % file_name)
