@@ -13,14 +13,14 @@ code = """
 #include <stdio.h>
 #include "/usr/local/cuda/samples/common/inc/helper_math.h"
 
-#define X_MIN -1.5f
+#define X_MIN (-1.5f)
 #define X_MAX 1.5f
-#define Y_MIN -3.2f
+#define Y_MIN (-3.2f)
 #define Y_MAX 2.0f
 
-#define X_MIN_SAMPLE -2.1f
+#define X_MIN_SAMPLE (-2.1f)
 #define X_MAX_SAMPLE 1.1f
-#define Y_MIN_SAMPLE -1.8f
+#define Y_MIN_SAMPLE (-1.8f)
 #define Y_MAX_SAMPLE 1.8f
 
 #define X_DIM %(XDIM)s
@@ -50,6 +50,9 @@ void init_kernel(int seed) {
 }
 
 __device__ void to_pixel(float2 &temp, int &ix, int &iy) {
+    ix = __float2int_rd((temp.x - X_MIN) / (X_MAX - X_MIN) *  X_DIM);
+    iy = __float2int_rd((temp.y - Y_MIN) / (Y_MAX - Y_MIN) *  Y_DIM);
+/*
 	temp.x -= X_MIN;
 	temp.y -= Y_MIN;
 	temp.x /= X_MAX - X_MIN;
@@ -58,19 +61,33 @@ __device__ void to_pixel(float2 &temp, int &ix, int &iy) {
 	temp.y *= Y_DIM;
 	ix = __float2int_rd(temp.x);
 	iy = __float2int_rd(temp.y);
+*/
 }
 
+__device__
+void write_pixel(float2 temp, int ix, int iy,
+    float4 z, unsigned int *canvas) {
+//    if (X_MIN <= z.x && z.x <= X_MAX && Y_MIN <= z.y && z.y <= Y_MAX  ) {
+    if (X_MIN <= z.x & z.x <= X_MAX & Y_MIN <= z.y & z.y <= Y_MAX  ) {
+        temp.x = z.y;
+        temp.y = z.x;
+        to_pixel(temp, ix, iy);
+        atomicAdd(&(canvas[iy*X_DIM + ix]), 1);
+    }
+}
+/*
 __device__
 void write_pixel(float2 temp, int ix, int iy,
 	float4 z, unsigned int *canvas) {
 	temp.x = z.y;
 	temp.y = z.x;
 	to_pixel(temp, ix, iy);
-	if (0 <= ix & ix < X_DIM & 0 <= iy & iy < Y_DIM) {
+	if (0 <= ix && ix < X_DIM && 0 <= iy && iy < Y_DIM) {
+//	if (0 <= ix & ix < X_DIM & 0 <= iy & iy < Y_DIM) {
 		atomicAdd(&(canvas[iy*X_DIM + ix]), 1);
 	}
 }
-
+*/
 __device__
 void generate_random_complex(float2 temp,
 	float4 &z, float &dist, unsigned int &count) {
