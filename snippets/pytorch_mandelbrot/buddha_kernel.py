@@ -27,65 +27,28 @@ code = """
 #define Y_DIM %(YDIM)s
 #define ITERS %(ITERS)s
 
-const int nstates = %(NGENERATORS)s;
-__device__ curandState_t* states[nstates];
+__constant__ float X_SCALE = 1/(X_MAX - X_MIN) * X_DIM;
+__constant__ float Y_SCALE = 1/(Y_MAX - Y_MIN) * Y_DIM;
+__constant__ static float2 xy_min = (float2){X_MIN, Y_MIN};
+__constant__ static float2 xy_scale = (float2){
+	1/(X_MAX - X_MIN) * X_DIM,
+	1/(Y_MAX - Y_MIN) * Y_DIM
+};
 
-extern "C" {
-__global__
-void init_kernel(int seed) {
-
-	int idx = threadIdx.x + blockIdx.x * blockDim.x;
-
-	if (idx < nstates) {
-		curandState_t* s = new curandState_t;
-		if (s != 0) {
-			curand_init(seed, idx, 0, s);
-		}
-
-		states[idx] = s;
-	} else {
-		printf("forbidden memory access %%d/%%d\\n", idx, nstates);
-	}
+__device__ void to_pixel(float2 &temp, int2 &ixy) {
+	temp -= xy_min;
+	temp *= xy_scale;
+	ixy = make_int2(temp);
 }
-}
-
-__device__ void to_pixel(float2 &temp, int &ix, int &iy) {
-//    ix = __float2int_rd((temp.x - X_MIN) / (X_MAX - X_MIN) *  X_DIM);
-//    iy = __float2int_rd((temp.y - Y_MIN) / (Y_MAX - Y_MIN) *  Y_DIM);
-
-	temp.x -= X_MIN;
-	temp.y -= Y_MIN;
-	temp.x /= X_MAX - X_MIN;
-	temp.y /= Y_MAX - Y_MIN;
-	temp.x *= X_DIM;
-	temp.y *= Y_DIM;
-	ix = __float2int_rd(temp.x);
-	iy = __float2int_rd(temp.y);
-
-}
-/*
-__device__
-void write_pixel(float2 temp, int ix, int iy,
-    float4 z, unsigned int *canvas) {
-//    if (X_MIN <= z.x && z.x <= X_MAX && Y_MIN <= z.y && z.y <= Y_MAX  ) {
-    if (X_MIN <= z.x & z.x <= X_MAX & Y_MIN <= z.y & z.y <= Y_MAX  ) {
-        temp.x = z.y;
-        temp.y = z.x;
-        to_pixel(temp, ix, iy);
-        atomicAdd(&(canvas[iy*X_DIM + ix]), 1);
-    }
-}
-*/
 
 __device__
-void write_pixel(float2 temp, int ix, int iy,
+void write_pixel(float2 temp, int2 ixy,
 	float4 z, unsigned int *canvas) {
 	temp.x = z.y;
 	temp.y = z.x;
-	to_pixel(temp, ix, iy);
-//	if (0 <= ix && ix < X_DIM && 0 <= iy && iy < Y_DIM) {
-	if (0 <= ix & ix < X_DIM & 0 <= iy & iy < Y_DIM) {
-		atomicAdd(&(canvas[iy*X_DIM + ix]), 1);
+	to_pixel(temp, ixy);
+	if (0 <= ixy.x & ixy.x < X_DIM & 0 <= ixy.y & ixy.y < Y_DIM) {
+		atomicAdd(&(canvas[ixy.y*X_DIM + ixy.x]), 1);
 	}
 }
 
@@ -128,7 +91,8 @@ void buddha_kernel(unsigned int *canvas, int seed) {
 		+ threadIdx.x * gridDim.x 
 		+ threadIdx.y * gridDim.x * blockDim.x;
 	float gridSize = 1/1024.0f;
-	int i, j, ix, iy;
+	int i, j;
+	int2 ixy;
 	float2 temp, coord;
 	unsigned int count;
 	float4 z;
@@ -148,7 +112,7 @@ void buddha_kernel(unsigned int *canvas, int seed) {
 
 				generate_random_complex(temp, z, dist, count);
 				if (check_bulbs(z)) {
-					while (count < ITERS & dist < 25) {
+					while (count < ITERS & dist < 4) {
 						count++;
 						temp.x = z.x*z.x - z.y*z.y + z.z;
 						temp.y = 2*z.x*z.y + z.w;
@@ -157,7 +121,7 @@ void buddha_kernel(unsigned int *canvas, int seed) {
 						dist = z.x*z.x + z.y*z.y;
 					}
 
-					if (dist > 25) {
+					if (dist > 4) {
 						z.x = z.z;
 						z.y = z.w;
 						for (j = 0; j < count; j++) {
@@ -165,7 +129,7 @@ void buddha_kernel(unsigned int *canvas, int seed) {
 							temp.y = 2*z.x*z.y + z.w;
 							z.x = temp.x;
 							z.y = temp.y;
-							write_pixel(temp, ix, iy, z, canvas);
+							write_pixel(temp, ixy, z, canvas);
 						}
 					}
 				}
@@ -209,7 +173,6 @@ def generate_image(x_dim, y_dim, iters):
 	context = device.make_context()
 
 	formatted_code = code % {
-		"NGENERATORS" : threads*b_s,
 		"XDIM" : x_dim,
 		"YDIM" : y_dim,
 		"ITERS" : iters
