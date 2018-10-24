@@ -50,9 +50,9 @@ void init_kernel(int seed) {
 }
 
 __device__ void to_pixel(float2 &temp, int &ix, int &iy) {
-    ix = __float2int_rd((temp.x - X_MIN) / (X_MAX - X_MIN) *  X_DIM);
-    iy = __float2int_rd((temp.y - Y_MIN) / (Y_MAX - Y_MIN) *  Y_DIM);
-/*
+//    ix = __float2int_rd((temp.x - X_MIN) / (X_MAX - X_MIN) *  X_DIM);
+//    iy = __float2int_rd((temp.y - Y_MIN) / (Y_MAX - Y_MIN) *  Y_DIM);
+
 	temp.x -= X_MIN;
 	temp.y -= Y_MIN;
 	temp.x /= X_MAX - X_MIN;
@@ -61,9 +61,9 @@ __device__ void to_pixel(float2 &temp, int &ix, int &iy) {
 	temp.y *= Y_DIM;
 	ix = __float2int_rd(temp.x);
 	iy = __float2int_rd(temp.y);
-*/
-}
 
+}
+/*
 __device__
 void write_pixel(float2 temp, int ix, int iy,
     float4 z, unsigned int *canvas) {
@@ -75,19 +75,20 @@ void write_pixel(float2 temp, int ix, int iy,
         atomicAdd(&(canvas[iy*X_DIM + ix]), 1);
     }
 }
-/*
+*/
+
 __device__
 void write_pixel(float2 temp, int ix, int iy,
 	float4 z, unsigned int *canvas) {
 	temp.x = z.y;
 	temp.y = z.x;
 	to_pixel(temp, ix, iy);
-	if (0 <= ix && ix < X_DIM && 0 <= iy && iy < Y_DIM) {
-//	if (0 <= ix & ix < X_DIM & 0 <= iy & iy < Y_DIM) {
+//	if (0 <= ix && ix < X_DIM && 0 <= iy && iy < Y_DIM) {
+	if (0 <= ix & ix < X_DIM & 0 <= iy & iy < Y_DIM) {
 		atomicAdd(&(canvas[iy*X_DIM + ix]), 1);
 	}
 }
-*/
+
 __device__
 void generate_random_complex(float2 temp,
 	float4 &z, float &dist, unsigned int &count) {
@@ -126,6 +127,7 @@ void buddha_kernel(unsigned int *canvas, int seed) {
 	int idx = blockIdx.x 
 		+ threadIdx.x * gridDim.x 
 		+ threadIdx.y * gridDim.x * blockDim.x;
+	float gridSize = 1/1024.0f;
 	int i, j, ix, iy;
 	float2 temp, coord;
 	unsigned int count;
@@ -134,14 +136,14 @@ void buddha_kernel(unsigned int *canvas, int seed) {
 	curandState_t s;
 	curand_init(seed, idx, 0, &s);
 
-	for (coord.x = 0; coord.x < 1; coord.x += 1/(float)blockDim.x) {
-		for (coord.y = 0; coord.y < 1; coord.y += 1/(float)blockDim.x) {
+	for (coord.x = 0; coord.x < 1; coord.x += gridSize) {
+		for (coord.y = 0; coord.y < 1; coord.y += gridSize) {
 
 			for(i = 0; i < 1; i++) {
 
 				temp.x = curand_uniform(&s);
 				temp.y = curand_uniform(&s);
-				temp /= (float)blockDim.x;
+				temp *= gridSize;
 				temp += coord;
 
 				generate_random_complex(temp, z, dist, count);
@@ -169,10 +171,8 @@ void buddha_kernel(unsigned int *canvas, int seed) {
 				}
 			}
 			__syncthreads();
-
 		}
 	}
-
 }
 }
 """
@@ -201,7 +201,7 @@ def format_and_save(cpu_canvas, x_dim, y_dim, threads, iters):
 
 def generate_image(x_dim, y_dim, iters):
 
-	threads = 2**4
+	threads = 2**7
 	b_s = 2**9
 
 	device = Device(0)
