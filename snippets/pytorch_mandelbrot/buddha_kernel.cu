@@ -7,10 +7,9 @@
 #define Y_MIN (-3.2f)
 #define Y_MAX 2.0f
 
-#define X_MIN_SAMPLE (-2.1f)
-#define X_MAX_SAMPLE 1.1f
-#define Y_MIN_SAMPLE 0.f
-#define Y_MAX_SAMPLE 1.8f
+#define X_MIN_SAMPLE (-2.08f)
+#define X_MAX_SAMPLE 1.08f
+#define Y_MAX_SAMPLE 1.77f
 
 #define X_DIM %(XDIM)s
 #define Y_DIM %(YDIM)s
@@ -38,6 +37,7 @@ void write_pixel(float2 temp, int2 ixy,
 	to_pixel(temp, ixy);
 	if (0 <= ixy.x & ixy.x < X_DIM & 0 <= ixy.y & ixy.y < Y_DIM) {
 		atomicAdd(&(canvas[ixy.y*X_DIM + ixy.x]), 1);
+		// atomicAdd(&(canvas[(ixy.y+1)*X_DIM - ixy.x-1]), 1);
 	}
 }
 
@@ -47,8 +47,7 @@ void generate_random_complex(float2 temp,
 
 	temp.x *= X_MAX_SAMPLE-X_MIN_SAMPLE;
 	temp.x += X_MIN_SAMPLE;
-	temp.y *= Y_MAX_SAMPLE-Y_MIN_SAMPLE;
-	temp.y += Y_MIN_SAMPLE;
+	temp.y *= Y_MAX_SAMPLE;
 
 	z.x = temp.x;
 	z.y = temp.y;
@@ -85,16 +84,15 @@ void write_to_image(float4 z, float2 temp, int2 ixy,
 		z.y = temp.y;
 		write_pixel(temp, ixy, z, canvas);
 	}
-
 }
 
 extern "C" {
 __global__
-void buddha_kernel(unsigned int *canvas, int seed) {
+void buddha_kernel(unsigned int *canvas, int seed, float gridSize) {
 	int idx = blockIdx.x 
 		+ threadIdx.x * gridDim.x 
 		+ threadIdx.y * gridDim.x * blockDim.x;
-	float gridSize = 1/1024.0f;
+
 	int2 ixy;
 	float2 temp, coord;
 	unsigned int count;
@@ -106,7 +104,7 @@ void buddha_kernel(unsigned int *canvas, int seed) {
 	for (coord.x = 0; coord.x < 1; coord.x += gridSize) {
 		for (coord.y = 0; coord.y < 1; coord.y += gridSize) {
 
-			for(int i = 0; i < 10; i++) {
+			for(int i = 0; i < 1; i++) {
 
 				temp.x = curand_uniform(&s);
 				temp.y = curand_uniform(&s);

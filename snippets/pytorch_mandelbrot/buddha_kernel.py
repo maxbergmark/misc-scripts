@@ -33,6 +33,7 @@ def generate_image(x_dim, y_dim, iters):
 
 	threads = 2**7
 	b_s = 2**9
+	grid_size = np.float32(1/64)
 
 	device = Device(0)
 	print("\n\t" + device.name(), "\n")
@@ -55,7 +56,7 @@ def generate_image(x_dim, y_dim, iters):
 	canvas = gpuarray.zeros((y_dim, x_dim), dtype = np.uint32)
 
 	t0 = time.time()
-	fill_func(canvas, seed, block=(b_s,1,1), grid=(threads,1,1))
+	fill_func(canvas, seed, grid_size, block=(b_s,1,1), grid=(threads,1,1))
 	context.synchronize()
 	t1 = time.time()
 
