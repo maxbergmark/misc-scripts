@@ -30,26 +30,27 @@ def format_and_save(cpu_canvas, x_dim, y_dim, threads, iters):
 	scipy.misc.toimage(cpu_canvas, cmin=0.0, cmax=1.0).save(file_name)
 	print("\tImage saved!\n")
 
-def transform_image(canvas, x_dim, y_dim):
-	new = 0*canvas
-	for y in range(y_dim):
-		# print(y, y_dim)
-		for x in range(x_dim):
-			idx = y*x_dim + x
-			dim = 16
-			block = x//dim*(y_dim//dim) + y//dim
-			blockRow = x % dim
-			blockCol = y % dim
-			transformed = block*dim*dim + blockCol*dim + blockRow
-
-			new[idx] = canvas[transformed]
+def transform_image(canvas, x_dim, y_dim, dim):
+	print("\tFormatting...")
+	if dim == 1:
+		canvas.shape = (y_dim, x_dim)
+		return canvas
+	new = np.zeros((y_dim, x_dim), dtype = np.float64)
+	for i in range(0, y_dim*x_dim, dim*dim):
+		block = canvas[i:i+dim*dim]
+		block.shape = (dim,dim)
+		block_row = (i // (dim*x_dim)) * dim
+		block_col = (i // dim) % x_dim
+		new[block_row:block_row+dim, block_col:block_col+dim] = block
+		# new[block_col:block_col+dim, block_row:block_row+dim] = block
 	return new
 
 def generate_image(x_dim, y_dim, iters):
 
 	threads = 2**7
 	b_s = 2**9
-	grid_size = np.float32(1/256)
+	dim = 32
+	grid_size = np.float32(1/1024)
 
 	device = Device(0)
 	print("\n\t" + device.name(), "\n")
@@ -58,7 +59,8 @@ def generate_image(x_dim, y_dim, iters):
 	formatted_code = code % {
 		"XDIM" : x_dim,
 		"YDIM" : y_dim,
-		"ITERS" : iters
+		"ITERS" : iters,
+		"DIM" : dim
 	}
 
 	# generate kernel and setup random number generation
@@ -78,7 +80,7 @@ def generate_image(x_dim, y_dim, iters):
 
 	# fetch buffer from gpu and save as image
 	cpu_canvas = canvas.get().astype(np.float64)
-	cpu_canvas = transform_image(cpu_canvas, x_dim, y_dim)
+	cpu_canvas = transform_image(cpu_canvas, x_dim, y_dim, dim)
 	context.pop()
 	elapsed_time = t1-t0
 	print_stats(cpu_canvas, elapsed_time, x_dim, y_dim)
@@ -86,7 +88,7 @@ def generate_image(x_dim, y_dim, iters):
 
 if __name__ == "__main__":
 
-	x_dim = 1440*1
-	y_dim = 2560*1
+	x_dim = 1440
+	y_dim = 2560
 	iters = 20
 	generate_image(x_dim, y_dim, iters)

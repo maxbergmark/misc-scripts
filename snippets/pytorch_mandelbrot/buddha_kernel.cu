@@ -14,6 +14,7 @@
 #define X_DIM %(XDIM)s
 #define Y_DIM %(YDIM)s
 #define ITERS %(ITERS)s
+#define BLOCK_DIM %(DIM)s
 
 __constant__ float X_SCALE = 1/(X_MAX - X_MIN) * X_DIM;
 __constant__ float Y_SCALE = 1/(Y_MAX - Y_MIN) * Y_DIM;
@@ -23,66 +24,21 @@ __constant__ static float2 xy_scale = (float2){
 	1/(Y_MAX - Y_MIN) * Y_DIM
 };
 
-//rotate/flip a quadrant appropriately
 __device__
-void rot(int n, int *x, int *y, int rx, int ry) {
-    if (ry == 0) {
-        if (rx == 1) {
-            *x = n-1 - *x;
-            *y = n-1 - *y;
-        }
-
-        //Swap x and y
-        int t  = *x;
-        *x = *y;
-        *y = t;
-    }
-}
-
-//convert (x,y) to d
-__device__
-int xy2d_hilbert (int n, int x, int y) {
-    int rx, ry, s, d=0;
-    for (s=n/2; s>0; s/=2) {
-        rx = (x & s) > 0;
-        ry = (y & s) > 0;
-        d += s * s * ((3 * rx) ^ ry);
-        rot(s, &x, &y, rx, ry);
-    }
-    return d;
-}
-
-//convert d to (x,y)
-__device__
-void d2xy_hilbert(int n, int d, int *x, int *y) {
-    int rx, ry, s, t=d;
-    *x = *y = 0;
-    for (s=1; s<n; s*=2) {
-        rx = 1 & (t/2);
-        ry = 1 & (t ^ rx);
-        rot(s, x, y, rx, ry);
-        *x += s * rx;
-        *y += s * ry;
-        t /= 4;
-    }
-}
-
-__device__
-int xy2d (int xd, int yd, int x, int y) {
-	int dim = 16;
-	int block = x/dim*(yd/dim) + y/dim;
-	int blockRow = x %% dim;
-	int blockCol = y %% dim;
-	return block*dim*dim + blockCol*dim + blockRow;
+int xy2d (int2 ixy) {
+	int block = ixy.y/BLOCK_DIM*(X_DIM/BLOCK_DIM) + ixy.x/BLOCK_DIM;
+	int blockRow = ixy.x %% BLOCK_DIM;
+	int blockCol = ixy.y %% BLOCK_DIM;
+	return block*BLOCK_DIM*BLOCK_DIM + blockCol*BLOCK_DIM + blockRow;
 //	return block;
 }
 
 
-__device__ int to_pixel(float2 &temp, int2 &ixy) {
+__device__
+void to_pixel(float2 &temp, int2 &ixy) {
 	temp -= xy_min;
 	temp *= xy_scale;
 	ixy = make_int2(temp);
-	return xy2d(X_DIM, Y_DIM, ixy.x, ixy.y);
 }
 
 __device__
@@ -90,10 +46,11 @@ void write_pixel(float2 temp, int2 ixy,
 	float4 z, unsigned int *canvas) {
 	temp.x = z.y;
 	temp.y = z.x;
-	int idx = to_pixel(temp, ixy);
+	to_pixel(temp, ixy);
 	if (0 <= ixy.x & ixy.x < X_DIM & 0 <= ixy.y & ixy.y < Y_DIM) {
 	// if (0 <= idx & idx < X_DIM*Y_DIM) {
 		// atomicAdd(&(canvas[ixy.y*X_DIM + ixy.x]), 1);
+		int idx = xy2d(ixy);
 		atomicAdd(&(canvas[idx]), 1);
 		// canvas[ixy.y*X_DIM + ixy.x] = idx;
 		// atomicAdd(&(canvas[(ixy.y+1)*X_DIM - ixy.x-1]), 1);
@@ -131,7 +88,8 @@ bool check_bulbs(float4 z) {
 	return main_card & period_2 & smaller_bulb & smaller_bottom & smaller_top;
 }
 
-__device__ __forceinline__
+__device__
+__forceinline__
 void write_to_image(float4 z, float2 temp, int2 ixy, 
 	int count, unsigned int *canvas) {
 	z.x = z.z;
@@ -143,6 +101,46 @@ void write_to_image(float4 z, float2 temp, int2 ixy,
 		z.y = temp.y;
 		write_pixel(temp, ixy, z, canvas);
 	}
+}
+
+__device__
+__forceinline__
+void check_if_in_buddha(float4 &z, float2 &temp, 
+	unsigned int &count, float &dist) {
+	while (count < ITERS & dist < 4) {
+		count++;
+		temp.x = z.x*z.x - z.y*z.y + z.z;
+		temp.y = 2*z.x*z.y + z.w;
+		z.x = temp.x;
+		z.y = temp.y;
+		dist = z.x*z.x + z.y*z.y;
+	}
+}
+
+__device__
+__forceinline__
+void iterate(float4 z, unsigned int count, float dist, int2 ixy, 
+	float2 temp, float2 coord, float gridSize, 
+	curandState_t s, unsigned int *canvas) {
+	for(int i = 0; i < 1; i++) {
+
+		temp.x = curand_uniform(&s);
+		temp.y = curand_uniform(&s);
+		temp *= gridSize;
+		temp += coord;
+
+		generate_random_complex(temp, z, dist, count);
+		if (check_bulbs(z)) {
+			check_if_in_buddha(z, temp, count, dist);
+
+			if (dist > 4) {
+				write_to_image(z, temp, ixy, count, canvas);
+				z.w *= -1;
+				write_to_image(z, temp, ixy, count, canvas);						 
+			}
+		}
+	}
+
 }
 
 extern "C" {
@@ -162,32 +160,7 @@ void buddha_kernel(unsigned int *canvas, int seed, float gridSize) {
 
 	for (coord.x = 0; coord.x < 1; coord.x += gridSize) {
 		for (coord.y = 0; coord.y < 1; coord.y += gridSize) {
-
-			for(int i = 0; i < 1; i++) {
-
-				temp.x = curand_uniform(&s);
-				temp.y = curand_uniform(&s);
-				temp *= gridSize;
-				temp += coord;
-
-				generate_random_complex(temp, z, dist, count);
-				if (check_bulbs(z)) {
-					while (count < ITERS & dist < 4) {
-						count++;
-						temp.x = z.x*z.x - z.y*z.y + z.z;
-						temp.y = 2*z.x*z.y + z.w;
-						z.x = temp.x;
-						z.y = temp.y;
-						dist = z.x*z.x + z.y*z.y;
-					}
-
-					if (dist > 4) {
-						write_to_image(z, temp, ixy, count, canvas);
-						z.w *= -1;
-						write_to_image(z, temp, ixy, count, canvas);						 
-					}
-				}
-			}
+			iterate(z, count, dist, ixy, temp, coord, gridSize, s, canvas);
 			__syncthreads();
 		}
 	}
