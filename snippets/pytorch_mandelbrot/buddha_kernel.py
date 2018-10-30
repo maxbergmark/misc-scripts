@@ -49,8 +49,8 @@ def generate_image(x_dim, y_dim, iters):
 
 	threads = 2**7
 	b_s = 2**9
-	dim = 32
-	grid_size = np.float32(1/1024)
+	dim = 8
+	grid_size = np.float32(1/4096)
 
 	device = Device(0)
 	print("\n\t" + device.name(), "\n")
