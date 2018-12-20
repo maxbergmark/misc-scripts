@@ -526,8 +526,50 @@ class BlessRNG(Bot):
 
 class Chaser(Bot):
 	def make_throw(self, scores, last_round):
-		while max(scores) > scores[self.index] + sum(self.current_throws):
+		while max(scores) > (scores[self.index] + sum(self.current_throws)):
 			yield True
-		yield True
-		yield True
+		while last_round and (scores[self.index] + sum(self.current_throws)) < 44:
+			yield True
+		while self.not_thrown_firce() and sum(self.current_throws, scores[self.index]) < 44:
+			yield True
+		yield False
+
+	def not_thrown_firce(self):
+		return len(self.current_throws) < 4
+
+class SlowStart(Bot):
+	def __init__(self, *args):
+		super().__init__(*args)
+		self.completeLastRound = False
+		self.nor = 1
+		self.threshold = 8
+
+	def updateValues(self):
+		if self.completeLastRound:
+			if self.nor < self.threshold:
+				self.nor *= 2
+			else:
+				self.nor += 1
+		else:
+			self.threshold = self.nor // 2
+			self.nor = 1
+
+
+	def make_throw(self, scores, last_round):
+
+		self.updateValues()
+		self.completeLastRound = False
+
+		i = 1
+		while i < self.nor:
+			yield True
+			i += 1
+
+		self.completeLastRound = True
+		yield False
+
+class FutureBot(Bot):
+	def make_throw(self, scores, last_round):
+		while (random.randint(1,6) != 6) and (random.randint(1,6) != 6):
+			yield True
 		yield False

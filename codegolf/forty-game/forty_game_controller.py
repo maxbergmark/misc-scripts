@@ -17,12 +17,12 @@ def print_str(x, y, string):
 	print("\033["+str(y)+";"+str(x)+"H"+string, end = "", flush =   True)
 
 class bcolors:
-    WHITE = '\033[0m'
-    GREEN = '\033[92m'
-    BLUE = '\033[94m'
-    YELLOW = '\033[93m'
-    RED = '\033[91m'
-    ENDC = '\033[0m'
+	WHITE = '\033[0m'
+	GREEN = '\033[92m'
+	BLUE = '\033[94m'
+	YELLOW = '\033[93m'
+	RED = '\033[91m'
+	ENDC = '\033[0m'
 
 # Class for handling the game logic and relaying information to the bots
 class Controller:
@@ -36,16 +36,21 @@ class Controller:
 		bots -- a list of all available bot classes
 		"""
 		self.bots_per_game = bots_per_game
-		self.games  = games
+		self.games = games
 		self.bots = bots
 		self.number_of_bots = len(self.bots)
-		self.wins = {bot.__name__: 0 for bot in self.bots}
-		self.played_games = {bot.__name__: 0 for bot in self.bots}
+		self.wins = defaultdict(int)
+		self.played_games = defaultdict(int)
+		self.bot_timings = defaultdict(float)
+		# self.wins = {bot.__name__: 0 for bot in self.bots}
+		# self.played_games = {bot.__name__: 0 for bot in self.bots}
 		self.end_score = 40
 		self.thread_id = thread_id
 		self.max_rounds = 200
 		self.timed_out_games = 0
 		self.tied_games = 0
+		self.total_rounds = 0
+		self.highscore = {bot.__name__: [0, 0, 0] for bot in self.bots}
 
 	# Returns a fair dice throw
 	def throw_die(self):
@@ -81,10 +86,11 @@ class Controller:
 	# each bot has participated in a game
 	def simulate_games(self):
 		for game in range(self.games):
-			if game % (self.games // 100) == 0 and not DEBUG:
-				if self.thread_id == 0 or ANSI:
-					progress = (game+1) / self.games
-					self.print_progress(progress)
+			if self.games > 100:
+				if game % (self.games // 100) == 0 and not DEBUG:
+					if self.thread_id == 0 or ANSI:
+						progress = (game+1) / self.games
+						self.print_progress(progress)
 			game_bot_indices = random.sample(
 				range(self.number_of_bots), 
 				self.bots_per_game
@@ -115,8 +121,10 @@ class Controller:
 		# continue until one bot has reached end_score points
 		while not last_round:
 			for index, bot in enumerate(game_bots):
-
+				t0 = time.clock()
 				self.single_bot(index, bot, game_scores, last_round)
+				t1 = time.clock()
+				self.bot_timings[bot.__class__.__name__] += t1-t0
 
 				if game_scores[index] >= self.end_score:
 					last_round = True
@@ -132,17 +140,25 @@ class Controller:
 
 		# make sure that all bots get their last round
 		for index, bot in enumerate(game_bots[:last_round_initiator]):
+			t0 = time.clock()
 			self.single_bot(index, bot, game_scores, last_round)
+			t1 = time.clock()
+			self.bot_timings[bot.__class__.__name__] += t1-t0
 
 		# calculate which bots have the highest score
 		max_score = max(game_scores)
 		nr_of_winners = 0
 		for i in range(self.bots_per_game):
+			self.highscore[game_bots[i].__class__.__name__][1] += game_scores[i]
+			if self.highscore[game_bots[i].__class__.__name__][0] < game_scores[i]:
+				self.highscore[game_bots[i].__class__.__name__][0] = game_scores[i]
 			if game_scores[i] == max_score:
+				self.highscore[game_bots[i].__class__.__name__][2] += game_scores[i]
 				nr_of_winners += 1
 				self.wins[game_bots[i].__class__.__name__] += 1
 		if nr_of_winners > 1:
 			self.tied_games += 1
+		self.total_rounds += round_number
 
 	def single_bot(self, index, bot, game_scores, last_round):
 		"""Simulates a single round for one bot
@@ -176,36 +192,55 @@ class Controller:
 			game_scores[index] += sum(current_throws)
 		if DEBUG:
 			desc = "%d: Bot %24s plays %40s with " + \
-			"scores %20s and last round == %5s"
+			"scores %30s and last round == %5s"
 			print(desc % (index, bot.__class__.__name__, 
 				current_throws, game_scores, last_round))
 
 
-	# Collects all stats for the thread, so they can be summed in the main thread
+	# Collects all stats for the thread, so they can be summed up later
 	def collect_results(self):
 		self.bot_stats = {
 			bot.__name__: [
 				self.wins[bot.__name__],
-				self.played_games[bot.__name__]
+				self.played_games[bot.__name__],
+				self.highscore[bot.__name__]
 			]
 		for bot in self.bots}
 
 
-# Print the high score after the simulation
+# 
 def print_results(total_bot_stats, total_game_stats, elapsed_time):
+	"""Print the high score after the simulation
+
+	Keyword arguments:
+	total_bot_stats -- A list containing the winning stats for each thread
+	total_game_stats -- A list containing controller stats for each thread
+	elapsed_time -- The number of seconds that it took to run the simulation
+	"""
+
 	# Find the name of each bot, the number of wins, the number
 	# of played games, and the win percentage
 	wins = defaultdict(int)
 	played_games = defaultdict(int)
+	highscores = defaultdict(lambda: [0,0,0])
 	bots = set()
 	timed_out_games = sum(s[0] for s in total_game_stats)
 	tied_games = sum(s[1] for s in total_game_stats)
+	total_games = sum(s[2] for s in total_game_stats)
+	total_rounds = sum(s[4] for s in total_game_stats)
+	average_rounds = total_rounds / total_games
+	bot_timings = defaultdict(float)
 
 	for thread in total_bot_stats:
 		for bot, stats in thread.items():
 			wins[bot] += stats[0]
 			played_games[bot] += stats[1]
+			for i in range(3):
+				highscores[bot][i] += stats[2][i]
 			bots.add(bot)
+
+	for bot in bots:
+		bot_timings[bot] += sum(s[3][bot] for s in total_game_stats)
 
 	bot_stats = [[
 		bot, 
@@ -231,27 +266,54 @@ def print_results(total_bot_stats, total_game_stats, elapsed_time):
 	else:
 		print("\n")
 
-	print("\tSimulation completed in %.1f seconds" % elapsed_time)
-	print("\t%d games were ties between two or more bots" % tied_games)
+	sim_msg = "\tSimulation or %d games completed in %.1f seconds"
+	print(sim_msg % (total_games, elapsed_time))
+	print("\tEach game lasted for an average of %.2f rounds" % average_rounds)
+	print("\t%d games were tied between two or more bots" % tied_games)
 	print("\t%d games ran until max_rounds\n" % timed_out_games)
 
 
 	print("\t%s %s%5s (%8s/%8s)" 
 		% ("Bot", " "*(max_len-2), "Win %", "Wins", "Played"))
 	for bot, wins, played, score in sorted_scores:
+		highscore = highscores[bot]
+		print(highscore)
 		space_fill = " "*(max_len-len(bot)+1)
-		format_arguments = (bot, space_fill, score, wins, played)
-		print("\t%s:%s%5.1f (%8d/%8d)" % format_arguments)
+		format_arguments = (bot, space_fill, score, wins, played, highscore[0], highscore[1] / played,
+                                highscore[2] / max(1, wins))
+		print("\t%s:%s%5.1f (%8d/%8d) %6d %6.3f %6.3f" % format_arguments)
 	print()
 
+	total_time = sum(bot_timings.values())
+	sorted_times = sorted(bot_timings.items(), 
+		key=lambda x: x[1], reverse = True)
+	print("\t%s %s%5s %7s" % ("Bot", " "*(max_len-2), "Time", "Time%"))
+	for bot, bot_time in sorted_times:
+		space_fill = " "*(max_len-len(bot)+1)
+		perc = 100 * bot_time / total_time
+		print("\t%s:%s%.2fs (%4.1f%%)" % (bot, space_fill, bot_time, perc))
+	print()
+
+
 def run_simulation(thread_id, bots_per_game, games_per_thread, bots):
+	"""Used by multithreading to run the simulation in parallel
+
+	Keyword arguments:
+	thread_id -- A unique identifier for each thread, starting at 0
+	bots_per_game -- How many bots should participate in each game
+	games_per_thread -- The number of games to be simulated
+	bots -- A list of all bot classes available
+	"""
 	try:
 		controller = Controller(bots_per_game, 
 			games_per_thread, bots, thread_id)
 		controller.simulate_games()
 		controller_stats = (
 			controller.timed_out_games,
-			controller.tied_games
+			controller.tied_games,
+			controller.games,
+			controller.bot_timings,
+			controller.total_rounds
 		)
 		return (controller.bot_stats, controller_stats)
 	except KeyboardInterrupt:
@@ -267,7 +329,8 @@ def print_help():
 	print("\n  -n\t\tthe number of games to simluate")
 	print("  -b\t\tthe number of bots per round")
 	print("  -t\t\tthe number of threads")
-	print("  -A\t\tRun in ANSI mode, with prettier printing")
+	print("  -A\t--ansi\trun in ANSI mode, with prettier printing")
+	print("  -D\t--debug\trun in debug mode. Sets to 1 thread, 1 game")
 	print("  -h\t--help\tshow this help\n")
 
 if __name__ == "__main__":
@@ -284,8 +347,10 @@ if __name__ == "__main__":
 			bots_per_game = int(sys.argv[i+1])
 		if arg == "-t" and len(sys.argv) > i+1 and sys.argv[i+1].isdigit():
 			threads = int(sys.argv[i+1])
-		if arg == "-A":
+		if arg == "-A" or arg == "--ansi":
 			ANSI = True
+		if arg == "-D" or arg == "--debug":
+			DEBUG = True
 		if arg == "-h" or arg == "--help":
 			print_help()
 			quit()
@@ -306,6 +371,10 @@ if __name__ == "__main__":
 	if threads <= 0:
 		print("\tAt least 1 thread is needed")
 		threads = 1
+	if DEBUG:
+		print("\tRunning in debug mode, with 1 thread and 1 game")
+		threads = 1
+		games = 1
 
 	games_per_thread = math.ceil(games / threads)
 
