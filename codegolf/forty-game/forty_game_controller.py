@@ -1,4 +1,5 @@
 import random
+import time
 import math
 import sys
 from multiprocessing import Pool
@@ -15,6 +16,13 @@ ANSI = False
 def print_str(x, y, string):
 	print("\033["+str(y)+";"+str(x)+"H"+string, end = "", flush =   True)
 
+class bcolors:
+    WHITE = '\033[0m'
+    GREEN = '\033[92m'
+    BLUE = '\033[94m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
+    ENDC = '\033[0m'
 
 # Class for handling the game logic and relaying information to the bots
 class Controller:
@@ -35,6 +43,9 @@ class Controller:
 		self.played_games = {bot.__name__: 0 for bot in self.bots}
 		self.end_score = 40
 		self.thread_id = thread_id
+		self.max_rounds = 200
+		self.timed_out_games = 0
+		self.tied_games = 0
 
 	# Returns a fair dice throw
 	def throw_die(self):
@@ -47,8 +58,17 @@ class Controller:
 		space = " "*(length-filled)
 		perc = int(100*progress)
 		if ANSI:
+			col = [
+				bcolors.RED, 
+				bcolors.YELLOW, 
+				bcolors.WHITE, 
+				bcolors.BLUE, 
+				bcolors.GREEN
+			][int(progress*4)]
+
+			end = bcolors.ENDC
 			print_str(5, 8 + self.thread_id, 
-				"\t[%s%s] %3d%%" % (fill, space, perc)
+				"\t%s[%s%s] %3d%%%s" % (col, fill, space, perc, end)
 			)
 		else:
 			print(
@@ -104,8 +124,9 @@ class Controller:
 			round_number += 1
 
 			# maximum of 200 rounds per game
-			if round_number > 199:
+			if round_number > self.max_rounds - 1:
 				last_round = True
+				self.timed_out_games += 1
 				# this ensures that everyone gets their last turn
 				last_round_initiator = self.bots_per_game
 
@@ -115,9 +136,13 @@ class Controller:
 
 		# calculate which bots have the highest score
 		max_score = max(game_scores)
+		nr_of_winners = 0
 		for i in range(self.bots_per_game):
 			if game_scores[i] == max_score:
+				nr_of_winners += 1
 				self.wins[game_bots[i].__class__.__name__] += 1
+		if nr_of_winners > 1:
+			self.tied_games += 1
 
 	def single_bot(self, index, bot, game_scores, last_round):
 		"""Simulates a single round for one bot
@@ -167,13 +192,15 @@ class Controller:
 
 
 # Print the high score after the simulation
-def print_results(total_bot_stats):
-	print("\n")
+def print_results(total_bot_stats, total_game_stats, elapsed_time):
 	# Find the name of each bot, the number of wins, the number
 	# of played games, and the win percentage
 	wins = defaultdict(int)
 	played_games = defaultdict(int)
 	bots = set()
+	timed_out_games = sum(s[0] for s in total_game_stats)
+	tied_games = sum(s[1] for s in total_game_stats)
+
 	for thread in total_bot_stats:
 		for bot, stats in thread.items():
 			wins[bot] += stats[0]
@@ -201,19 +228,32 @@ def print_results(total_bot_stats):
 	# Print the highscore list
 	if ANSI:
 		print_str(0, 9 + threads, "")
+	else:
+		print("\n")
 
-	print("\t%s %s%5s (%6s/%6s)" % ("Bot", " "*(max_len-2), "Win %", "Wins", "Played"))
+	print("\tSimulation completed in %.1f seconds" % elapsed_time)
+	print("\t%d games were ties between two or more bots" % tied_games)
+	print("\t%d games ran until max_rounds\n" % timed_out_games)
+
+
+	print("\t%s %s%5s (%8s/%8s)" 
+		% ("Bot", " "*(max_len-2), "Win %", "Wins", "Played"))
 	for bot, wins, played, score in sorted_scores:
 		space_fill = " "*(max_len-len(bot)+1)
 		format_arguments = (bot, space_fill, score, wins, played)
-		print("\t%s:%s%5.1f (%6d/%6d)" % format_arguments)
+		print("\t%s:%s%5.1f (%8d/%8d)" % format_arguments)
 	print()
 
 def run_simulation(thread_id, bots_per_game, games_per_thread, bots):
 	try:
-		controller = Controller(bots_per_game, games_per_thread, bots, thread_id)
+		controller = Controller(bots_per_game, 
+			games_per_thread, bots, thread_id)
 		controller.simulate_games()
-		return controller.bot_stats
+		controller_stats = (
+			controller.timed_out_games,
+			controller.tied_games
+		)
+		return (controller.bot_stats, controller_stats)
 	except KeyboardInterrupt:
 		return {}
 
@@ -277,6 +317,13 @@ if __name__ == "__main__":
 		print("\tFor help running the script, use the -h flag")
 	print()
 	with Pool(threads) as pool:
-		results = pool.starmap(run_simulation, [(i, bots_per_game, games_per_thread, bots) for i in range(threads)])
+		t0 = time.time()
+		results = pool.starmap(
+			run_simulation, 
+			[(i, bots_per_game, games_per_thread, bots) for i in range(threads)]
+		)
+		t1 = time.time()
 		if not DEBUG:
-			print_results(results)
+			total_bot_stats = [r[0] for r in results]
+			total_game_stats = [r[1] for r in results]
+			print_results(total_bot_stats, total_game_stats, t1-t0)

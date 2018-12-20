@@ -2,13 +2,8 @@ import sys, inspect
 import random
 
 # Returns a list of all bot classes which inherit from the Bot class
-def get_all_bots():	
-	bots = []
-	current_module = sys.modules[__name__]
-	for name, obj in inspect.getmembers(current_module, inspect.isclass):
-		if name != "Bot":
-			bots.append(obj)
-	return bots
+def get_all_bots():
+	return Bot.__subclasses__()
 
 # The parent class for all bots
 class Bot:
@@ -527,4 +522,12 @@ class BlessRNG(Bot):
 	def make_throw(self, scores, last_round):
 		if random.randint(1,2) == 1 :
 			yield True
+		yield False
+
+class Chaser(Bot):
+	def make_throw(self, scores, last_round):
+		while max(scores) > scores[self.index] + sum(self.current_throws):
+			yield True
+		yield True
+		yield True
 		yield False
