@@ -320,7 +320,7 @@ class Hesitate(Bot):
 		elif myscore==0:
 			target = 17
 		else:
-			target = 35
+			target = self.end_score-5
 		while myscore+sum(self.current_throws) < target:
 			yield True
 		yield False
@@ -386,38 +386,41 @@ class StopBot(Bot):
 class StepBot(Bot):
 	def __init__(self, *args):
 		super().__init__(*args)
-		self.steps = 6
+		self.cycles = 0
+		self.steps = 7
 		self.smallTarget = 15
 		self.bigTarget = 20
 		self.rush = True
 
 	def make_throw(self, scores, last_round):
 		# Stacks upon stacks upon stacks
+		self.bigTarget += 1 - (1 if self.steps % 3 == 0 else 0)
+		self.cycles += 1
 		self.steps += 1
-		self.smallTarget += 1
-		self.bigTarget += 1
+		if self.cycles <=3:
+			self.smallTarget += 1
 		# If you didn't start the last round, panic ensues
 		if last_round:
 			# Rack up points just in case
-			while scores[self.index] + sum(self.current_throws) <= 35:
-				yield True
+			# while scores[self.index] + sum(self.current_throws) <= 35:
+			#	 yield True
 			# Keep going until we're not behind
 			while max(scores) >= scores[self.index] + sum(self.current_throws):
 				yield True
 		else:
 			# Hope for big points when low, don't bite more than you can chew when high
-			target = self.bigTarget if scores[self.index] < 12 else self.bigTarget if self.steps <= 10 else self.smallTarget
+			target = self.bigTarget if scores[self.index] < 12 else self.bigTarget if self.cycles <=4 else self.smallTarget
 			currentStep = 1
 			while currentStep <= self.steps:
 				if sum(self.current_throws) > target:
 					break;
 				yield True
-				# After throw, if we get to self.end_score then rush (worst case we'll get drawn back)
-				if scores[self.index] + sum(self.current_throws) >= self.end_score and self.rush:
+				# After throw, if we get to 40 then rush (worst case we'll get drawn back)
+				if scores[self.index] + sum(self.current_throws) > 40 and self.rush:
 					currentStep = 1
 					self.steps = 2
 					self.rush = False
-					target = self.smallTarget
+					target = self.smallTarget - 5
 				currentStep += 1
 		yield False
 
@@ -571,5 +574,27 @@ class SlowStart(Bot):
 class FutureBot(Bot):
 	def make_throw(self, scores, last_round):
 		while (random.randint(1,6) != 6) and (random.randint(1,6) != 6):
+			current_score = scores[self.index] + sum(self.current_throws)
+			if current_score > (self.end_score+5):
+				break
 			yield True
+		yield False
+
+class OneStepAheadBot(Bot):
+	def make_throw(self, scores, last_round):
+		while random.randint(1,6) != 6:
+			current_score = scores[self.index] + sum(self.current_throws)
+			if current_score > (self.end_score+5):
+				break
+			yield True
+		yield False
+
+class FlipCoinRollDice(Bot):
+	def make_throw(self, scores, last_round):
+		while random.randint(1,2) == 2:
+			throws = random.randint(1,6) != 6
+			x = 0
+			while x < throws:
+				x = x + 1
+				yield True
 		yield False

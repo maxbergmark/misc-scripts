@@ -50,7 +50,10 @@ class Controller:
 		self.timed_out_games = 0
 		self.tied_games = 0
 		self.total_rounds = 0
-		self.highscore = {bot.__name__: [0, 0, 0] for bot in self.bots}
+		self.highest_round = 0
+		#max, avg, avg_win, throws, success, rounds
+		self.highscore = defaultdict(lambda:[0, 0, 0, 0, 0, 0])
+		# self.highscore = {bot.__name__: [0, 0, 0] for bot in self.bots}
 
 	# Returns a fair dice throw
 	def throw_die(self):
@@ -118,6 +121,7 @@ class Controller:
 		round_number = 0
 		game_scores = [0 for _ in range(self.bots_per_game)]
 
+
 		# continue until one bot has reached end_score points
 		while not last_round:
 			for index, bot in enumerate(game_bots):
@@ -149,16 +153,21 @@ class Controller:
 		max_score = max(game_scores)
 		nr_of_winners = 0
 		for i in range(self.bots_per_game):
-			self.highscore[game_bots[i].__class__.__name__][1] += game_scores[i]
-			if self.highscore[game_bots[i].__class__.__name__][0] < game_scores[i]:
-				self.highscore[game_bots[i].__class__.__name__][0] = game_scores[i]
+			bot_name = game_bots[i].__class__.__name__
+			# average score per bot
+			self.highscore[bot_name][1] += game_scores[i]
+			if self.highscore[bot_name][0] < game_scores[i]:
+				# maximum score per bot
+				self.highscore[bot_name][0] = game_scores[i]
 			if game_scores[i] == max_score:
-				self.highscore[game_bots[i].__class__.__name__][2] += game_scores[i]
+				# average winning score per bot
+				self.highscore[bot_name][2] += game_scores[i]
 				nr_of_winners += 1
-				self.wins[game_bots[i].__class__.__name__] += 1
+				self.wins[bot_name] += 1
 		if nr_of_winners > 1:
 			self.tied_games += 1
 		self.total_rounds += round_number
+		self.highest_round = max(self.highest_round, round_number)
 
 	def single_bot(self, index, bot, game_scores, last_round):
 		"""Simulates a single round for one bot
@@ -190,11 +199,20 @@ class Controller:
 		else:
 			# add to total score if no 6 is cast
 			game_scores[index] += sum(current_throws)
+
 		if DEBUG:
 			desc = "%d: Bot %24s plays %40s with " + \
 			"scores %30s and last round == %5s"
 			print(desc % (index, bot.__class__.__name__, 
 				current_throws, game_scores, last_round))
+
+		bot_name = bot.__class__.__name__
+		# average throws per round
+		self.highscore[bot_name][3] += len(current_throws)
+		# average success rate per round
+		self.highscore[bot_name][4] += int(current_throws[-1] != 6)
+		# total number of rounds
+		self.highscore[bot_name][5] += 1
 
 
 	# Collects all stats for the thread, so they can be summed up later
@@ -222,12 +240,13 @@ def print_results(total_bot_stats, total_game_stats, elapsed_time):
 	# of played games, and the win percentage
 	wins = defaultdict(int)
 	played_games = defaultdict(int)
-	highscores = defaultdict(lambda: [0,0,0])
+	highscores = defaultdict(lambda: [0, 0, 0, 0, 0, 0])
 	bots = set()
 	timed_out_games = sum(s[0] for s in total_game_stats)
 	tied_games = sum(s[1] for s in total_game_stats)
 	total_games = sum(s[2] for s in total_game_stats)
 	total_rounds = sum(s[4] for s in total_game_stats)
+	highest_round = max(s[5] for s in total_game_stats)
 	average_rounds = total_rounds / total_games
 	bot_timings = defaultdict(float)
 
@@ -235,25 +254,20 @@ def print_results(total_bot_stats, total_game_stats, elapsed_time):
 		for bot, stats in thread.items():
 			wins[bot] += stats[0]
 			played_games[bot] += stats[1]
-			for i in range(3):
+
+			highscores[bot][0] = max(highscores[bot][0], stats[2][0])		
+			for i in range(1, 6):
 				highscores[bot][i] += stats[2][i]
 			bots.add(bot)
 
 	for bot in bots:
 		bot_timings[bot] += sum(s[3][bot] for s in total_game_stats)
 
-	bot_stats = [[
-		bot, 
-		wins[bot],
-		played_games[bot],
-		0
-	] for bot in bots]
+	bot_stats = [[bot, wins[bot], played_games[bot], 0] for bot in bots]
 
 	for i, bot in enumerate(bot_stats):
-		if bot[2] > 0:
-			bot[3] = 100 * bot[1] / bot[2]
+		bot[3] = 100 * bot[1] / bot[2] if bot[2] > 0 else 0
 		bot_stats[i] = tuple(bot)
-
 
 	# Sort the bots by their winning percentage
 	sorted_scores = sorted(bot_stats, key=lambda x: x[3], reverse=True)
@@ -266,33 +280,78 @@ def print_results(total_bot_stats, total_game_stats, elapsed_time):
 	else:
 		print("\n")
 
-	sim_msg = "\tSimulation or %d games completed in %.1f seconds"
-	print(sim_msg % (total_games, elapsed_time))
+	sim_msg = "\tSimulation or %d games between %d bots " + \
+		"completed in %.1f seconds"
+	print(sim_msg % (total_games, len(bots), elapsed_time))
 	print("\tEach game lasted for an average of %.2f rounds" % average_rounds)
 	print("\t%d games were tied between two or more bots" % tied_games)
-	print("\t%d games ran until max_rounds\n" % timed_out_games)
+	print("\t%d games ran until the round limit, highest round was %d\n"
+		% (timed_out_games, highest_round))
+
+	print_bot_stats(sorted_scores, max_len, highscores)
+	print_time_stats(bot_timings, max_len)
 
 
-	print("\t%s %s%5s (%8s/%8s)" 
-		% ("Bot", " "*(max_len-2), "Win %", "Wins", "Played"))
+def print_bot_stats(sorted_scores, max_len, highscores):
+	"""Print the stats for the bots
+
+	Keyword arguments:
+	sorted_scores -- A list containing the bots in sorted order
+	max_len -- The maximum name length for all bots
+	highscores -- A dict with additional stats for each bot
+	"""
+	delimiter_format = "\t+%s%s+%s+%s+%s+%s+%s+%s+%s+%s+"
+	delimiter_args = ("-"*(max_len), "", "-"*4, "-"*8, 
+		"-"*8, "-"*6, "-"*6, "-"*7, "-"*6, "-"*8)
+	delimiter_str = delimiter_format % delimiter_args
+	print(delimiter_str)
+	print("\t|%s%s|%4s|%8s|%8s|%6s|%6s|%7s|%6s|%8s|" 
+		% ("Bot", " "*(max_len-3), "Win%", "Wins", 
+			"Played", "Max", "Avg", "Avg win", "Throws", "Success%"))
+	print(delimiter_str)
+
 	for bot, wins, played, score in sorted_scores:
 		highscore = highscores[bot]
-		print(highscore)
-		space_fill = " "*(max_len-len(bot)+1)
-		format_arguments = (bot, space_fill, score, wins, played, highscore[0], highscore[1] / played,
-                                highscore[2] / max(1, wins))
-		print("\t%s:%s%5.1f (%8d/%8d) %6d %6.3f %6.3f" % format_arguments)
+		bot_max_score = highscore[0]
+		bot_avg_score = highscore[1] / played
+		bot_avg_win_score = highscore[2] / max(1, wins)
+		bot_avg_throws = highscore[3] / highscore[5]
+		bot_success_rate = 100 * highscore[4] / highscore[5]
+
+		space_fill = " "*(max_len-len(bot))
+		format_str = "\t|%s%s|%4.1f|%8d|%8d|%6d|%6.2f|%7.2f|%6.2f|%8.2f|"
+		format_arguments = (bot, space_fill, score, wins, 
+			played, bot_max_score, bot_avg_score,
+			bot_avg_win_score, bot_avg_throws, bot_success_rate)
+		print(format_str % format_arguments)
+
+	print(delimiter_str)
 	print()
 
+def print_time_stats(bot_timings, max_len):
+	"""Print the execution time for all bots
+
+	Keyword arguments:
+	bot_timings -- A dict containing information about timings for each bot
+	max_len -- The maximum name length for all bots
+	"""
 	total_time = sum(bot_timings.values())
 	sorted_times = sorted(bot_timings.items(), 
 		key=lambda x: x[1], reverse = True)
-	print("\t%s %s%5s %7s" % ("Bot", " "*(max_len-2), "Time", "Time%"))
+
+	delimiter_format = "\t+%s+%s+%s+"
+	delimiter_args = ("-"*(max_len), "-"*5, "-"*5)
+	delimiter_str = delimiter_format % delimiter_args
+	print(delimiter_str)
+
+	print("\t|%s%s|%5s|%5s|" % ("Bot", " "*(max_len-3), "Time", "Time%"))
+	print(delimiter_str)
 	for bot, bot_time in sorted_times:
-		space_fill = " "*(max_len-len(bot)+1)
+		space_fill = " "*(max_len-len(bot))
 		perc = 100 * bot_time / total_time
-		print("\t%s:%s%.2fs (%4.1f%%)" % (bot, space_fill, bot_time, perc))
-	print()
+		print("\t|%s%s|%5.2f|%5.1f|" % (bot, space_fill, bot_time, perc))
+	print(delimiter_str)
+	print()	
 
 
 def run_simulation(thread_id, bots_per_game, games_per_thread, bots):
@@ -313,7 +372,8 @@ def run_simulation(thread_id, bots_per_game, games_per_thread, bots):
 			controller.tied_games,
 			controller.games,
 			controller.bot_timings,
-			controller.total_rounds
+			controller.total_rounds,
+			controller.highest_round
 		)
 		return (controller.bot_stats, controller_stats)
 	except KeyboardInterrupt:
