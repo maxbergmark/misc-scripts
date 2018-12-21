@@ -2,6 +2,7 @@ import random
 import time
 import math
 import sys
+from numpy import cumsum
 from multiprocessing import Pool
 from collections import defaultdict
 # Importing all the bots
@@ -53,6 +54,7 @@ class Controller:
 		self.highest_round = 0
 		#max, avg, avg_win, throws, success, rounds
 		self.highscore = defaultdict(lambda:[0, 0, 0, 0, 0, 0])
+		self.winning_scores = defaultdict(int)
 		# self.highscore = {bot.__name__: [0, 0, 0] for bot in self.bots}
 
 	# Returns a fair dice throw
@@ -168,6 +170,7 @@ class Controller:
 			self.tied_games += 1
 		self.total_rounds += round_number
 		self.highest_round = max(self.highest_round, round_number)
+		self.winning_scores[max_score] += 1
 
 	def single_bot(self, index, bot, game_scores, last_round):
 		"""Simulates a single round for one bot
@@ -248,7 +251,14 @@ def print_results(total_bot_stats, total_game_stats, elapsed_time):
 	total_rounds = sum(s[4] for s in total_game_stats)
 	highest_round = max(s[5] for s in total_game_stats)
 	average_rounds = total_rounds / total_games
+	winning_scores = defaultdict(int)
 	bot_timings = defaultdict(float)
+
+	for stats in total_game_stats:
+		for score, count in stats[6].items():
+			winning_scores[score] += count
+	percentiles = calculate_percentiles(winning_scores, total_games)
+
 
 	for thread in total_bot_stats:
 		for bot, stats in thread.items():
@@ -280,6 +290,7 @@ def print_results(total_bot_stats, total_game_stats, elapsed_time):
 	else:
 		print("\n")
 
+
 	sim_msg = "\tSimulation or %d games between %d bots " + \
 		"completed in %.1f seconds"
 	print(sim_msg % (total_games, len(bots), elapsed_time))
@@ -289,7 +300,33 @@ def print_results(total_bot_stats, total_game_stats, elapsed_time):
 		% (timed_out_games, highest_round))
 
 	print_bot_stats(sorted_scores, max_len, highscores)
+	print_score_percentiles(percentiles)
 	print_time_stats(bot_timings, max_len)
+
+def calculate_percentiles(winning_scores, total_games):
+	percentile_bins = 10000
+	percentiles = [0 for _ in range(percentile_bins)]
+	sorted_keys = list(sorted(winning_scores.keys()))
+	sorted_values = [winning_scores[key] for key in sorted_keys]
+	cumsum_values = list(cumsum(sorted_values))
+	i = 0
+
+	for perc in range(percentile_bins):
+		while cumsum_values[i] < total_games * (perc+1) / percentile_bins:
+			i += 1
+		percentiles[perc] = sorted_keys[i] 
+	return percentiles
+
+def print_score_percentiles(percentiles):
+	n = len(percentiles)
+	show = [.5, .75, .9, .95, .99, .999, .9999]
+	print("\t+----------+-----+")
+	print("\t|Percentile|Score|")
+	print("\t+----------+-----+")
+	for p in show:
+		print("\t|%10.1f|%5d|" % (100*p, percentiles[int(p*n)]))
+	print("\t+----------+-----+")
+	print()
 
 
 def print_bot_stats(sorted_scores, max_len, highscores):
@@ -373,7 +410,8 @@ def run_simulation(thread_id, bots_per_game, games_per_thread, bots):
 			controller.games,
 			controller.bot_timings,
 			controller.total_rounds,
-			controller.highest_round
+			controller.highest_round,
+			controller.winning_scores
 		)
 		return (controller.bot_stats, controller_stats)
 	except KeyboardInterrupt:

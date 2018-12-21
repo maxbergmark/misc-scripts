@@ -260,7 +260,6 @@ class NotTooFarBehindBot(Bot):
 class BringMyOwn_dice(Bot):
 
 	def __init__(self, *args):
-		# import random as rnd
 		self.die = lambda: random.randint(1,6)
 		super().__init__(*args)
 
@@ -597,4 +596,40 @@ class FlipCoinRollDice(Bot):
 			while x < throws:
 				x = x + 1
 				yield True
+		yield False
+
+class GamblersFallacy(Bot):
+	def make_throw(self, scores, last_round):
+		# since we're guaranteed to throw once, only throw up to 4 extra times
+		for i in range(4):
+			# the closer the score gets to winning,
+			# and the closer the throws get to equaling 5,
+			# the more likely the bot is to quit
+			if (scores[self.index]/40.0 + len(self.current_throws)/5.0) < 0.90:
+				yield True
+			else:
+				break
+		yield False
+
+class MatchLeaderBot(Bot):
+	# Try to match the current leader, then pass them in the last round
+	def make_throw(self, scores, last_round):
+
+		while True:
+			current_top = max(scores)
+			my_total = scores[self.index]
+			my_round_total = sum(self.current_throws)
+			my_current_total = my_total + my_round_total
+			difference = current_top - my_current_total
+
+			if last_round and my_current_total < self.end_score:
+				# Go for gold while we still can
+				yield True
+				continue
+			elif difference >= 6:
+				# Don't risk another throw
+				yield True
+				continue
+			break
+
 		yield False
