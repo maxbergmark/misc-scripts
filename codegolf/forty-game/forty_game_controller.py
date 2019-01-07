@@ -1,21 +1,40 @@
-import random
-import time
+#!/usr/bin/env python3
+import re
+import json
 import math
+import random
+import requests
 import sys
+import time
 from numpy import cumsum
-from multiprocessing import Pool
+
 from collections import defaultdict
-# Importing all the bots
-from forty_game_bots import *
+from html import unescape
+from lxml import html
+from multiprocessing import Pool
+from os import path, rename, remove
+from sys import stderr
+from time import strftime
 
 # If you want to see what each bot decides, set this to true
 # Should only be used with one thread and one game
 DEBUG = False
 # If your terminal supports ANSI, try setting this to true
 ANSI = False
+# File to keep base class and own bots
+OWN_FILE = 'forty_game_bots.py'
+# File where to store the downloaded bots
+AUTO_FILE = 'auto_bots.py'
+# If you want to use up all your quota & re-download all bots
+DOWNLOAD = False
+# If you want to ignore a specific user's bots (eg. your own bots): add to list
+IGNORE = []
+# The API-request to get all the bots
+URL = "https://api.stackexchange.com/2.2/questions/177765/answers?page=%s&pagesize=100&order=desc&sort=creation&site=codegolf&filter=!bLf7Wx_BfZlJ7X"
+
 
 def print_str(x, y, string):
-	print("\033["+str(y)+";"+str(x)+"H"+string, end = "", flush =   True)
+	print("\033["+str(y)+";"+str(x)+"H"+string, end = "", flush = True)
 
 class bcolors:
 	WHITE = '\033[0m'
@@ -132,7 +151,7 @@ class Controller:
 				t1 = time.clock()
 				self.bot_timings[bot.__class__.__name__] += t1-t0
 
-				if game_scores[index] >= self.end_score:
+				if game_scores[index] >= self.end_score and not last_round:
 					last_round = True
 					last_round_initiator = index
 			round_number += 1
@@ -186,7 +205,7 @@ class Controller:
 		if current_throws[-1] != 6:
 
 			bot.update_state(current_throws[:])
-			for throw in bot.make_throw(game_scores, last_round):
+			for throw in bot.make_throw(game_scores[:], last_round):
 				# send the last die cast to the bot
 				if not throw:
 					break
@@ -265,7 +284,7 @@ def print_results(total_bot_stats, total_game_stats, elapsed_time):
 			wins[bot] += stats[0]
 			played_games[bot] += stats[1]
 
-			highscores[bot][0] = max(highscores[bot][0], stats[2][0])		
+			highscores[bot][0] = max(highscores[bot][0], stats[2][0])	   
 			for i in range(1, 6):
 				highscores[bot][i] += stats[2][i]
 			bots.add(bot)
@@ -324,7 +343,7 @@ def print_score_percentiles(percentiles):
 	print("\t|Percentile|Score|")
 	print("\t+----------+-----+")
 	for p in show:
-		print("\t|%10.1f|%5d|" % (100*p, percentiles[int(p*n)]))
+		print("\t|%10.2f|%5d|" % (100*p, percentiles[int(p*n)]))
 	print("\t+----------+-----+")
 	print()
 
@@ -377,18 +396,18 @@ def print_time_stats(bot_timings, max_len):
 		key=lambda x: x[1], reverse = True)
 
 	delimiter_format = "\t+%s+%s+%s+"
-	delimiter_args = ("-"*(max_len), "-"*5, "-"*5)
+	delimiter_args = ("-"*(max_len), "-"*7, "-"*5)
 	delimiter_str = delimiter_format % delimiter_args
 	print(delimiter_str)
 
-	print("\t|%s%s|%5s|%5s|" % ("Bot", " "*(max_len-3), "Time", "Time%"))
+	print("\t|%s%s|%7s|%5s|" % ("Bot", " "*(max_len-3), "Time", "Time%"))
 	print(delimiter_str)
 	for bot, bot_time in sorted_times:
 		space_fill = " "*(max_len-len(bot))
 		perc = 100 * bot_time / total_time
-		print("\t|%s%s|%5.2f|%5.1f|" % (bot, space_fill, bot_time, perc))
+		print("\t|%s%s|%7.2f|%5.1f|" % (bot, space_fill, bot_time, perc))
 	print(delimiter_str)
-	print()	
+	print() 
 
 
 def run_simulation(thread_id, bots_per_game, games_per_thread, bots):
@@ -427,13 +446,93 @@ def print_help():
 	print("\n  -n\t\tthe number of games to simluate")
 	print("  -b\t\tthe number of bots per round")
 	print("  -t\t\tthe number of threads")
+	print("  -d\t--download\tdownload all bots from codegolf.SE")
 	print("  -A\t--ansi\trun in ANSI mode, with prettier printing")
 	print("  -D\t--debug\trun in debug mode. Sets to 1 thread, 1 game")
 	print("  -h\t--help\tshow this help\n")
 
+# Make a stack-API request for the n-th page
+def req(n):
+	req = requests.get(URL % n)
+	req.raise_for_status()
+	return req.json()
+
+# Pull all the answers via the stack-API
+def get_answers():
+	n = 1
+	api_ans = req(n)
+	answers = api_ans['items']
+	while api_ans['has_more']:
+		n += 1
+		if api_ans['quota_remaining']:
+			api_ans = req(n)
+			answers += api_ans['items']
+		else:
+			break
+
+	m, r = api_ans['quota_max'], api_ans['quota_remaining']
+	if 0.1 * m > r:
+		print(" > [WARN]: only %s/%s API-requests remaining!" % (r,m), file=stderr)
+
+	return answers
+
+
+def download_players():
+	players = {}
+
+	for ans in get_answers():
+		name = unescape(ans['owner']['display_name'])
+		bots = []
+
+		root = html.fromstring('<body>%s</body>' % ans['body'])
+		for el in root.findall('.//code'):
+			code = el.text
+			if re.search(r'^class \w+\(\w*Bot\):.*$', code, flags=re.MULTILINE):
+				bots.append(code)
+
+		if not bots:
+			print(" > [WARN] user '%s': couldn't locate any bots" % name, file=stderr)
+		elif name in players:
+			players[name] += bots
+		else:
+			players[name] = bots
+
+	return players
+
+
+# Download all bots from codegolf.stackexchange.com
+def download_bots():
+	print('pulling bots from the interwebs..', file=stderr)
+	try:
+		players = download_players()
+	except Exception as ex:
+		print('FAILED: (%s)' % ex, file=stderr)
+		exit(1)
+
+	if path.isfile(AUTO_FILE):
+		print(' > move: %s -> %s.old' % (AUTO_FILE,AUTO_FILE), file=stderr)
+		if path.exists('%s.old' % AUTO_FILE):
+			remove('%s.old' % AUTO_FILE)
+		rename(AUTO_FILE, '%s.old' % AUTO_FILE)
+
+	print(' > writing players to %s' % AUTO_FILE, file=stderr)
+	f = open(AUTO_FILE, 'w+', encoding='utf8')
+	f.write('# -*- coding: utf-8 -*- \n')
+	f.write('# Bots downloaded from https://codegolf.stackexchange.com/questions/177765 @ %s\n\n' % strftime('%F %H:%M:%S'))
+	with open(OWN_FILE, 'r') as bfile:
+		f.write(bfile.read()+'\n\n\n# Auto-pulled bots:\n\n')
+	for usr in players:
+		if usr not in IGNORE:
+			for bot in players[usr]:
+				f.write('# User: %s\n' % usr)
+				f.write(bot+'\n\n')
+	f.close()
+
+	print('OK: pulled %s bots' % sum(len(bs) for bs in players.values()))
+
+
 if __name__ == "__main__":
 
-	bots = get_all_bots()
 	games = 10000
 	bots_per_game = 8
 	threads = 4
@@ -445,6 +544,8 @@ if __name__ == "__main__":
 			bots_per_game = int(sys.argv[i+1])
 		if arg == "-t" and len(sys.argv) > i+1 and sys.argv[i+1].isdigit():
 			threads = int(sys.argv[i+1])
+		if arg == "-d" or arg == "--download":
+			DOWNLOAD = True
 		if arg == "-A" or arg == "--ansi":
 			ANSI = True
 		if arg == "-D" or arg == "--debug":
@@ -457,6 +558,17 @@ if __name__ == "__main__":
 		print_str(1,3,"")
 	else:
 		print()
+
+	if DOWNLOAD:
+		download_bots()
+		exit() # Before running other's code, you might want to inspect it..
+
+	if path.isfile(AUTO_FILE):
+		exec('from %s import *' % AUTO_FILE[:-3])
+	else:
+		exec('from %s import *' % OWN_FILE[:-3])
+
+	bots = get_all_bots()
 
 	if bots_per_game > len(bots):
 		bots_per_game = len(bots)
@@ -483,6 +595,7 @@ if __name__ == "__main__":
 	if len(sys.argv) == 1:
 		print("\tFor help running the script, use the -h flag")
 	print()
+
 	with Pool(threads) as pool:
 		t0 = time.time()
 		results = pool.starmap(
