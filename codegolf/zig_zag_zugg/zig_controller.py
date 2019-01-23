@@ -22,7 +22,7 @@ DEBUG = False
 # If your terminal supports ANSI, try setting this to true
 ANSI = False
 # File to keep base class and own bots
-OWN_FILE = 'forty_game_bots.py'
+OWN_FILE = 'zig_zag_bots.py'
 # File where to store the downloaded bots
 AUTO_FILE = 'auto_bots.py'
 # If you want to use up all your quota & re-download all bots
@@ -47,38 +47,26 @@ class bcolors:
 # Class for handling the game logic and relaying information to the bots
 class Controller:
 
-	def __init__(self, bots_per_game, games, bots, thread_id):
+	def __init__(self, games, bots_per_game, bots, thread_id):
 		"""Initiates all fields relevant to the simulation
 
 		Keyword arguments:
-		bots_per_game -- the number of bots that should be included in a game
 		games -- the number of games that should be simulated
 		bots -- a list of all available bot classes
 		"""
-		self.bots_per_game = bots_per_game
 		self.games = games
-		self.bots = bots
+		self.bots = [bot() for bot in bots]
+		self.bots_per_game = bots_per_game
 		self.number_of_bots = len(self.bots)
 		self.wins = defaultdict(int)
 		self.played_games = defaultdict(int)
 		self.bot_timings = defaultdict(float)
-		# self.wins = {bot.__name__: 0 for bot in self.bots}
-		# self.played_games = {bot.__name__: 0 for bot in self.bots}
-		self.end_score = 40
 		self.thread_id = thread_id
-		self.max_rounds = 200
+		self.max_rounds = 100
 		self.timed_out_games = 0
-		self.tied_games = 0
 		self.total_rounds = 0
 		self.highest_round = 0
-		#max, avg, avg_win, throws, success, rounds
-		self.highscore = defaultdict(lambda:[0, 0, 0, 0, 0, 0])
-		self.winning_scores = defaultdict(int)
-		# self.highscore = {bot.__name__: [0, 0, 0] for bot in self.bots}
 
-	# Returns a fair dice throw
-	def throw_die(self):
-		return random.randint(1,6)
 	# Print the current game number without newline
 	def print_progress(self, progress):
 		length = 50
@@ -115,15 +103,15 @@ class Controller:
 					if self.thread_id == 0 or ANSI:
 						progress = (game+1) / self.games
 						self.print_progress(progress)
+
 			game_bot_indices = random.sample(
 				range(self.number_of_bots), 
 				self.bots_per_game
 			)
-
 			game_bots = [None for _ in range(self.bots_per_game)]
 			for i, bot_index in enumerate(game_bot_indices):
-				self.played_games[self.bots[bot_index].__name__] += 1
-				game_bots[i] = self.bots[bot_index](i, self.end_score)
+				self.played_games[self.bots[bot_index].__class__.__name__] += 1
+				game_bots[i] = self.bots[bot_index]
 
 			self.play(game_bots)
 		if not DEBUG and (ANSI or self.thread_id == 0):
@@ -138,112 +126,94 @@ class Controller:
 		game_bots -- A list of instantiated bot objects for the game
 		"""
 		last_round = False
-		last_round_initiator = -1
 		round_number = 0
-		game_scores = [0 for _ in range(self.bots_per_game)]
+		previous_announcements = []
+		previous_choices = []
+		announcements = [-1 for _ in range(self.bots_per_game)]
+		decisions = [-1 for _ in range(self.bots_per_game)]
+		in_game = [True for _ in range(self.bots_per_game)]
+		play_until_one = False
 
+		bot_names = [bot.__class__.__name__ for bot in game_bots]
+		for i, bot in enumerate(game_bots):
+			bot.reset(i, bot_names)
 
 		# continue until one bot has reached end_score points
 		while not last_round:
+			last_round = (round_number == self.max_rounds)
 			for index, bot in enumerate(game_bots):
-				t0 = time.clock()
-				self.single_bot(index, bot, game_scores, last_round)
-				t1 = time.clock()
-				self.bot_timings[bot.__class__.__name__] += t1-t0
+				if in_game[index]:
+					t0 = time.clock()
+					announcements[index] = bot.announce(
+						previous_announcements, 
+						previous_choices, 
+						in_game,
+						last_round
+					)
+					t1 = time.clock()
+					self.bot_timings[bot.__class__.__name__] += t1-t0
+				else:
+					announcements[index] = None
+			for index, bot in enumerate(game_bots):
+				if in_game[index]:
+					t0 = time.clock()
+					decisions[index] = bot.decide(announcements)
+					t1 = time.clock()
+					self.bot_timings[bot.__class__.__name__] += t1-t0
+				else:
+					decisions[index] = None
 
-				if game_scores[index] >= self.end_score and not last_round:
-					last_round = True
-					last_round_initiator = index
+			for index, bot in enumerate(game_bots):
+				if in_game[index]:
+					t0 = time.clock()
+					bot.recap(decisions)
+					t1 = time.clock()
+					self.bot_timings[bot.__class__.__name__] += t1-t0
+				else:
+					decisions[index] = None
+
+			true_count = decisions.count(True)
+			false_count = decisions.count(False)
+			if play_until_one:
+				if true_count < false_count and true_count > 0:
+					for i, decision in enumerate(decisions):
+						if decision == False:
+							in_game[i] = False
+
+				if true_count > false_count and false_count > 0:
+					for i, decision in enumerate(decisions):
+						if decision == True:
+							in_game[i] = False
+
+				if sum(in_game) == 1:
+					winner = game_bots[decisions.index(True)]
+					self.wins[winner.__class__.__name__] += 1
+					# print("winner found")
+					break
+			else:
+				if true_count < false_count:
+					for i, bot in enumerate(game_bots):
+						if decisions[i] == True:
+							self.wins[bot.__class__.__name__] += 1
+
+				if true_count > false_count:
+					for i, bot in enumerate(game_bots):
+						if decisions[i] == False:
+							self.wins[bot.__class__.__name__] += 1
+				break
+
 			round_number += 1
 
-			# maximum of 200 rounds per game
-			if round_number > self.max_rounds - 1:
-				last_round = True
-				self.timed_out_games += 1
-				# this ensures that everyone gets their last turn
-				last_round_initiator = self.bots_per_game
-
-		# make sure that all bots get their last round
-		for index, bot in enumerate(game_bots[:last_round_initiator]):
-			t0 = time.clock()
-			self.single_bot(index, bot, game_scores, last_round)
-			t1 = time.clock()
-			self.bot_timings[bot.__class__.__name__] += t1-t0
-
-		# calculate which bots have the highest score
-		max_score = max(game_scores)
-		nr_of_winners = 0
-		for i in range(self.bots_per_game):
-			bot_name = game_bots[i].__class__.__name__
-			# average score per bot
-			self.highscore[bot_name][1] += game_scores[i]
-			if self.highscore[bot_name][0] < game_scores[i]:
-				# maximum score per bot
-				self.highscore[bot_name][0] = game_scores[i]
-			if game_scores[i] == max_score:
-				# average winning score per bot
-				self.highscore[bot_name][2] += game_scores[i]
-				nr_of_winners += 1
-				self.wins[bot_name] += 1
-		if nr_of_winners > 1:
-			self.tied_games += 1
 		self.total_rounds += round_number
 		self.highest_round = max(self.highest_round, round_number)
-		self.winning_scores[max_score] += 1
-
-	def single_bot(self, index, bot, game_scores, last_round):
-		"""Simulates a single round for one bot
-
-		Keyword arguments:
-		index -- The player index of the bot (e.g. 0 if the bot goes first)
-		bot -- The bot object about to be simulated
-		game_scores -- A list of ints containing the scores of all players
-		last_round -- Boolean describing whether it is currently the last round
-		"""
-
-		current_throws = [self.throw_die()]
-		if current_throws[-1] != 6:
-
-			bot.update_state(current_throws[:])
-			for throw in bot.make_throw(game_scores[:], last_round):
-				# send the last die cast to the bot
-				if not throw:
-					break
-				current_throws.append(self.throw_die())
-				if current_throws[-1] == 6:
-					break
-				bot.update_state(current_throws[:])
-
-		if current_throws[-1] == 6:
-			# reset total score if running total is above end_score
-			if game_scores[index] + sum(current_throws) - 6 >= self.end_score:
-				game_scores[index] = 0
-		else:
-			# add to total score if no 6 is cast
-			game_scores[index] += sum(current_throws)
-
-		if DEBUG:
-			desc = "%d: Bot %24s plays %40s with " + \
-			"scores %30s and last round == %5s"
-			print(desc % (index, bot.__class__.__name__, 
-				current_throws, game_scores, last_round))
-
-		bot_name = bot.__class__.__name__
-		# average throws per round
-		self.highscore[bot_name][3] += len(current_throws)
-		# average success rate per round
-		self.highscore[bot_name][4] += int(current_throws[-1] != 6)
-		# total number of rounds
-		self.highscore[bot_name][5] += 1
 
 
 	# Collects all stats for the thread, so they can be summed up later
 	def collect_results(self):
 		self.bot_stats = {
-			bot.__name__: [
-				self.wins[bot.__name__],
-				self.played_games[bot.__name__],
-				self.highscore[bot.__name__]
+			bot.__class__.__name__: [
+				self.wins[bot.__class__.__name__],
+				self.played_games[bot.__class__.__name__]
 			]
 		for bot in self.bots}
 
@@ -262,35 +232,28 @@ def print_results(total_bot_stats, total_game_stats, elapsed_time):
 	# of played games, and the win percentage
 	wins = defaultdict(int)
 	played_games = defaultdict(int)
-	highscores = defaultdict(lambda: [0, 0, 0, 0, 0, 0])
+	# highscores = defaultdict(lambda: [0, 0, 0, 0, 0, 0])
 	bots = set()
 	timed_out_games = sum(s[0] for s in total_game_stats)
-	tied_games = sum(s[1] for s in total_game_stats)
-	total_games = sum(s[2] for s in total_game_stats)
-	total_rounds = sum(s[4] for s in total_game_stats)
-	highest_round = max(s[5] for s in total_game_stats)
+	total_games = sum(s[1] for s in total_game_stats)
+	total_rounds = sum(s[3] for s in total_game_stats)
+	highest_round = max(s[4] for s in total_game_stats)
 	average_rounds = total_rounds / total_games
 	winning_scores = defaultdict(int)
 	bot_timings = defaultdict(float)
-
-	for stats in total_game_stats:
-		for score, count in stats[6].items():
-			winning_scores[score] += count
-	percentiles = calculate_percentiles(winning_scores, total_games)
-
-
+	
 	for thread in total_bot_stats:
 		for bot, stats in thread.items():
 			wins[bot] += stats[0]
 			played_games[bot] += stats[1]
 
-			highscores[bot][0] = max(highscores[bot][0], stats[2][0])	   
-			for i in range(1, 6):
-				highscores[bot][i] += stats[2][i]
+			# highscores[bot][0] = max(highscores[bot][0], stats[2][0])	   
+			# for i in range(1, 6):
+				# highscores[bot][i] += stats[2][i]
 			bots.add(bot)
-
+	
 	for bot in bots:
-		bot_timings[bot] += sum(s[3][bot] for s in total_game_stats)
+		bot_timings[bot] += sum(s[2][bot] for s in total_game_stats)
 
 	bot_stats = [[bot, wins[bot], played_games[bot], 0] for bot in bots]
 
@@ -314,41 +277,14 @@ def print_results(total_bot_stats, total_game_stats, elapsed_time):
 		"completed in %.1f seconds"
 	print(sim_msg % (total_games, len(bots), elapsed_time))
 	print("\tEach game lasted for an average of %.2f rounds" % average_rounds)
-	print("\t%d games were tied between two or more bots" % tied_games)
 	print("\t%d games ran until the round limit, highest round was %d\n"
 		% (timed_out_games, highest_round))
 
-	print_bot_stats(sorted_scores, max_len, highscores)
-	print_score_percentiles(percentiles)
+	print_bot_stats(sorted_scores, max_len)
 	print_time_stats(bot_timings, max_len)
 
-def calculate_percentiles(winning_scores, total_games):
-	percentile_bins = 10000
-	percentiles = [0 for _ in range(percentile_bins)]
-	sorted_keys = list(sorted(winning_scores.keys()))
-	sorted_values = [winning_scores[key] for key in sorted_keys]
-	cumsum_values = list(cumsum(sorted_values))
-	i = 0
 
-	for perc in range(percentile_bins):
-		while cumsum_values[i] < total_games * (perc+1) / percentile_bins:
-			i += 1
-		percentiles[perc] = sorted_keys[i] 
-	return percentiles
-
-def print_score_percentiles(percentiles):
-	n = len(percentiles)
-	show = [.5, .75, .9, .95, .99, .999, .9999]
-	print("\t+----------+-----+")
-	print("\t|Percentile|Score|")
-	print("\t+----------+-----+")
-	for p in show:
-		print("\t|%10.2f|%5d|" % (100*p, percentiles[int(p*n)]))
-	print("\t+----------+-----+")
-	print()
-
-
-def print_bot_stats(sorted_scores, max_len, highscores):
+def print_bot_stats(sorted_scores, max_len):
 	"""Print the stats for the bots
 
 	Keyword arguments:
@@ -356,29 +292,21 @@ def print_bot_stats(sorted_scores, max_len, highscores):
 	max_len -- The maximum name length for all bots
 	highscores -- A dict with additional stats for each bot
 	"""
-	delimiter_format = "\t+%s%s+%s+%s+%s+%s+%s+%s+%s+%s+"
+	delimiter_format = "\t+%s%s+%s+%s+%s+"
 	delimiter_args = ("-"*(max_len), "", "-"*4, "-"*8, 
-		"-"*8, "-"*6, "-"*6, "-"*7, "-"*6, "-"*8)
+		"-"*8)
 	delimiter_str = delimiter_format % delimiter_args
 	print(delimiter_str)
-	print("\t|%s%s|%4s|%8s|%8s|%6s|%6s|%7s|%6s|%8s|" 
+	print("\t|%s%s|%4s|%8s|%8s|" 
 		% ("Bot", " "*(max_len-3), "Win%", "Wins", 
-			"Played", "Max", "Avg", "Avg win", "Throws", "Success%"))
+			"Played"))
 	print(delimiter_str)
 
 	for bot, wins, played, score in sorted_scores:
-		highscore = highscores[bot]
-		bot_max_score = highscore[0]
-		bot_avg_score = highscore[1] / max(1, played)
-		bot_avg_win_score = highscore[2] / max(1, wins)
-		bot_avg_throws = highscore[3] / max(1, highscore[5])
-		bot_success_rate = 100 * highscore[4] / max(1, highscore[5])
 
 		space_fill = " "*(max_len-len(bot))
-		format_str = "\t|%s%s|%4.1f|%8d|%8d|%6d|%6.2f|%7.2f|%6.2f|%8.2f|"
-		format_arguments = (bot, space_fill, score, wins, 
-			played, bot_max_score, bot_avg_score,
-			bot_avg_win_score, bot_avg_throws, bot_success_rate)
+		format_str = "\t|%s%s|%4.1f|%8d|%8d|"
+		format_arguments = (bot, space_fill, score, wins, played)
 		print(format_str % format_arguments)
 
 	print(delimiter_str)
@@ -410,27 +338,25 @@ def print_time_stats(bot_timings, max_len):
 	print() 
 
 
-def run_simulation(thread_id, bots_per_game, games_per_thread, bots):
+def run_simulation(thread_id, games_per_thread, bots_per_game, bots):
 	"""Used by multithreading to run the simulation in parallel
 
 	Keyword arguments:
 	thread_id -- A unique identifier for each thread, starting at 0
-	bots_per_game -- How many bots should participate in each game
 	games_per_thread -- The number of games to be simulated
 	bots -- A list of all bot classes available
 	"""
 	try:
-		controller = Controller(bots_per_game, 
-			games_per_thread, bots, thread_id)
+		controller = Controller(games_per_thread, bots_per_game, bots, thread_id)
 		controller.simulate_games()
 		controller_stats = (
 			controller.timed_out_games,
-			controller.tied_games,
+#			controller.tied_games,
 			controller.games,
 			controller.bot_timings,
 			controller.total_rounds,
-			controller.highest_round,
-			controller.winning_scores
+			controller.highest_round
+#			controller.winning_scores
 		)
 		return (controller.bot_stats, controller_stats)
 	except KeyboardInterrupt:
@@ -596,14 +522,23 @@ if __name__ == "__main__":
 		print("\tFor help running the script, use the -h flag")
 	print()
 
-	with Pool(threads) as pool:
+	if threads == 1:
 		t0 = time.time()
-		results = pool.starmap(
-			run_simulation, 
-			[(i, bots_per_game, games_per_thread, bots) for i in range(threads)]
-		)
+		results = [run_simulation(0, games_per_thread, bots_per_game, bots)]
 		t1 = time.time()
 		if not DEBUG:
 			total_bot_stats = [r[0] for r in results]
 			total_game_stats = [r[1] for r in results]
 			print_results(total_bot_stats, total_game_stats, t1-t0)
+	else:
+		with Pool(threads) as pool:
+			t0 = time.time()
+			results = pool.starmap(
+				run_simulation, 
+				[(i, games_per_thread, bots_per_game, bots) for i in range(threads)]
+			)
+			t1 = time.time()
+			if not DEBUG:
+				total_bot_stats = [r[0] for r in results]
+				total_game_stats = [r[1] for r in results]
+				print_results(total_bot_stats, total_game_stats, t1-t0)

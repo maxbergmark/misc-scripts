@@ -1,0 +1,897 @@
+
+Starting Nmap 7.01 ( https://nmap.org ) at 2019-01-10 09:13 CET
+Nmap scan report for 84-216-5-91.cust.invid.se (84.216.5.91)
+Host is up (0.024s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-5-129.cust.invid.se (84.216.5.129)
+Host is up (0.013s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-5-180.cust.invid.se (84.216.5.180)
+Host is up (0.0077s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for mail01.invidcloud.com (84.216.6.7)
+Host is up (0.015s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-6-13.cust.invid.se (84.216.6.13)
+Host is up (0.023s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-6-23.cust.invid.se (84.216.6.23)
+Host is up (0.019s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-7-47.cust.invid.se (84.216.7.47)
+Host is up (0.019s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for c-9d10d854.020-190-6c736b3.bbcust.telenor.se (84.216.16.157)
+Host is up (0.032s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for c-bc11d854.03-51-6c736b3.bbcust.telenor.se (84.216.17.188)
+Host is up (0.029s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for ua-84-216-22-34.bbcust.telenor.se (84.216.22.34)
+Host is up (0.0066s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for ua-84-216-22-106.bbcust.telenor.se (84.216.22.106)
+Host is up (0.021s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for ua-84-216-22-241.bbcust.telenor.se (84.216.22.241)
+Host is up (0.016s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for ua-84-216-23-57.bbcust.telenor.se (84.216.23.57)
+Host is up (0.020s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for ua-84-216-23-79.bbcust.telenor.se (84.216.23.79)
+Host is up (0.019s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for ua-84-216-23-155.bbcust.telenor.se (84.216.23.155)
+Host is up (0.033s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for ua-84-216-23-242.bbcust.telenor.se (84.216.23.242)
+Host is up (0.034s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-24-49.customers.ownit.se (84.216.24.49)
+Host is up (0.022s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-24-79.customers.ownit.se (84.216.24.79)
+Host is up (0.027s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-26-138.customers.ownit.se (84.216.26.138)
+Host is up (0.027s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84.216.26.169
+Host is up (0.024s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84.216.26.172
+Host is up (0.025s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-26-186.customers.ownit.se (84.216.26.186)
+Host is up (0.029s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-27-65.customers.ownit.se (84.216.27.65)
+Host is up (0.023s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-27-202.customers.ownit.se (84.216.27.202)
+Host is up (0.022s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84.216.31.58
+Host is up (0.041s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84.216.31.221
+Host is up (0.012s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-32-65.customers.ownit.se (84.216.32.65)
+Host is up (0.014s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-33-5.customers.ownit.se (84.216.33.5)
+Host is up (0.0079s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-33-57.customers.ownit.se (84.216.33.57)
+Host is up (0.0076s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-34-146.customers.ownit.se (84.216.34.146)
+Host is up (0.013s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-35-98.customers.ownit.se (84.216.35.98)
+Host is up (0.015s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-35-130.customers.ownit.se (84.216.35.130)
+Host is up (0.019s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84.216.35.138
+Host is up (0.021s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-35-141.customers.ownit.se (84.216.35.141)
+Host is up (0.021s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-35-142.customers.ownit.se (84.216.35.142)
+Host is up (0.020s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-36-89.customers.ownit.se (84.216.36.89)
+Host is up (0.017s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-36-126.customers.ownit.se (84.216.36.126)
+Host is up (0.0075s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-36-138.customers.ownit.se (84.216.36.138)
+Host is up (0.0048s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-36-153.customers.ownit.se (84.216.36.153)
+Host is up (0.021s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-37-81.customers.ownit.se (84.216.37.81)
+Host is up (0.031s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-37-86.customers.ownit.se (84.216.37.86)
+Host is up (0.032s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-37-130.customers.ownit.se (84.216.37.130)
+Host is up (0.020s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-37-225.customers.ownit.se (84.216.37.225)
+Host is up (0.050s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-38-33.customers.ownit.se (84.216.38.33)
+Host is up (0.022s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84.216.38.65
+Host is up (0.021s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84.216.38.67
+Host is up (0.021s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-38-161.customers.ownit.se (84.216.38.161)
+Host is up (0.018s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-38-211.customers.ownit.se (84.216.38.211)
+Host is up (0.021s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-40-1.customers.ownit.se (84.216.40.1)
+Host is up (0.017s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-40-3.customers.ownit.se (84.216.40.3)
+Host is up (0.019s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-40-114.customers.ownit.se (84.216.40.114)
+Host is up (0.026s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-41-194.customers.ownit.se (84.216.41.194)
+Host is up (0.0076s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-42-49.customers.ownit.se (84.216.42.49)
+Host is up (0.017s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84.216.42.114
+Host is up (0.0063s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-42-162.customers.ownit.se (84.216.42.162)
+Host is up (0.026s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-42-186.customers.ownit.se (84.216.42.186)
+Host is up (0.024s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-43-12.customers.ownit.se (84.216.43.12)
+Host is up (0.015s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84.216.43.113
+Host is up (0.0094s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-43-129.customers.ownit.se (84.216.43.129)
+Host is up (0.028s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-44-30.customers.ownit.se (84.216.44.30)
+Host is up (0.031s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-44-113.customers.ownit.se (84.216.44.113)
+Host is up (0.049s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-44-134.customers.ownit.se (84.216.44.134)
+Host is up (0.018s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84.216.44.141
+Host is up (0.0054s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84.216.44.142
+Host is up (0.0057s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84.216.45.226
+Host is up (0.018s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-46-25.customers.ownit.se (84.216.46.25)
+Host is up (0.0084s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-46-60.customers.ownit.se (84.216.46.60)
+Host is up (0.022s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-46-100.customers.ownit.se (84.216.46.100)
+Host is up (0.020s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-48-65.customers.ownit.se (84.216.48.65)
+Host is up (0.0090s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-49-83.customers.ownit.se (84.216.49.83)
+Host is up (0.042s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84.216.49.203
+Host is up (0.0072s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-52-166.customers.ownit.se (84.216.52.166)
+Host is up (0.022s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-53-222.customers.ownit.se (84.216.53.222)
+Host is up (0.029s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-54-1.customers.ownit.se (84.216.54.1)
+Host is up (0.022s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-56-138.customers.ownit.se (84.216.56.138)
+Host is up (0.22s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-58-59.customers.ownit.se (84.216.58.59)
+Host is up (0.019s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-58-132.customers.ownit.se (84.216.58.132)
+Host is up (0.021s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-59-58.customers.ownit.se (84.216.59.58)
+Host is up (0.016s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84.216.59.141
+Host is up (0.034s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-59-192.customers.ownit.se (84.216.59.192)
+Host is up (0.026s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-60-18.customers.ownit.se (84.216.60.18)
+Host is up (0.029s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-61-212.customers.ownit.se (84.216.61.212)
+Host is up (0.0056s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-63-108.customers.ownit.se (84.216.63.108)
+Host is up (0.022s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for c-4943d854.08-280-6d6c6d10.bbcust.telenor.se (84.216.67.73)
+Host is up (0.026s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for c-9743d854.017-140-6d6c6d10.cust.ownit.se (84.216.67.151)
+Host is up (0.023s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for c-da43d854.024-131-6d6c6d10.bbcust.telenor.se (84.216.67.218)
+Host is up (0.043s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for c-fb44d854.08-213-6862672.bbcust.telenor.se (84.216.68.251)
+Host is up (0.0074s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for c-fc45d854.06-289-6862672.bbcust.telenor.se (84.216.69.252)
+Host is up (0.026s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for c-0446d854.013-163-6862672.bbcust.telenor.se (84.216.70.4)
+Host is up (0.025s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for c-7f47d854.011-145-6862672.bbcust.telenor.se (84.216.71.127)
+Host is up (0.16s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for c-cf4cd854.012-216-6862672.bbcust.telenor.se (84.216.76.207)
+Host is up (0.024s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84.216.78.28
+Host is up (0.023s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-98-7.customers.ownit.se (84.216.98.7)
+Host is up (0.016s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-98-23.customers.ownit.se (84.216.98.23)
+Host is up (0.020s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-98-113.customers.ownit.se (84.216.98.113)
+Host is up (0.033s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-99-171.customers.ownit.se (84.216.99.171)
+Host is up (0.0076s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-100-149.customers.ownit.se (84.216.100.149)
+Host is up (0.029s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-102-1.customers.ownit.se (84.216.102.1)
+Host is up (0.032s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-102-196.customers.ownit.se (84.216.102.196)
+Host is up (0.0037s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-103-177.customers.ownit.se (84.216.103.177)
+Host is up (0.024s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-103-185.customers.ownit.se (84.216.103.185)
+Host is up (0.019s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-104-5.customers.ownit.se (84.216.104.5)
+Host is up (0.0052s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-104-13.customers.ownit.se (84.216.104.13)
+Host is up (0.017s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-104-78.customers.ownit.se (84.216.104.78)
+Host is up (0.0051s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-104-109.customers.ownit.se (84.216.104.109)
+Host is up (0.019s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-104-169.customers.ownit.se (84.216.104.169)
+Host is up (0.019s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-105-33.customers.ownit.se (84.216.105.33)
+Host is up (0.0074s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-105-36.customers.ownit.se (84.216.105.36)
+Host is up (0.0039s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-106-84.customers.ownit.se (84.216.106.84)
+Host is up (0.023s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-107-48.customers.ownit.se (84.216.107.48)
+Host is up (0.021s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-107-129.customers.ownit.se (84.216.107.129)
+Host is up (0.021s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-112-133.customers.ownit.se (84.216.112.133)
+Host is up (0.022s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-112-219.customers.ownit.se (84.216.112.219)
+Host is up (0.016s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-113-113.customers.ownit.se (84.216.113.113)
+Host is up (0.020s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-123-179.customers.ownit.se (84.216.123.179)
+Host is up (0.0094s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-124-1.customers.ownit.se (84.216.124.1)
+Host is up (0.042s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84.216.126.59
+Host is up (0.018s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-126-127.customers.ownit.se (84.216.126.127)
+Host is up (0.012s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-127-1.customers.ownit.se (84.216.127.1)
+Host is up (0.013s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-127-16.customers.ownit.se (84.216.127.16)
+Host is up (0.019s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-127-109.customers.ownit.se (84.216.127.109)
+Host is up (0.0095s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84.216.133.212
+Host is up (0.017s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-136-104.customers.ownit.se (84.216.136.104)
+Host is up (0.023s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-136-116.customers.ownit.se (84.216.136.116)
+Host is up (0.018s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-136-146.customers.ownit.se (84.216.136.146)
+Host is up (0.015s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-136-165.customers.ownit.se (84.216.136.165)
+Host is up (0.023s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-137-250.customers.ownit.se (84.216.137.250)
+Host is up (0.011s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-138-41.customers.ownit.se (84.216.138.41)
+Host is up (0.016s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-138-102.customers.ownit.se (84.216.138.102)
+Host is up (0.015s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-138-147.customers.ownit.se (84.216.138.147)
+Host is up (0.011s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-139-82.customers.ownit.se (84.216.139.82)
+Host is up (0.028s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-139-204.customers.ownit.se (84.216.139.204)
+Host is up (0.052s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-139-205.customers.ownit.se (84.216.139.205)
+Host is up (0.058s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-139-226.customers.ownit.se (84.216.139.226)
+Host is up (0.031s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-140-30.customers.ownit.se (84.216.140.30)
+Host is up (0.015s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-140-58.customers.ownit.se (84.216.140.58)
+Host is up (0.016s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-140-109.customers.ownit.se (84.216.140.109)
+Host is up (0.018s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-140-155.customers.ownit.se (84.216.140.155)
+Host is up (0.021s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-141-234.customers.ownit.se (84.216.141.234)
+Host is up (0.038s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-143-87.customers.ownit.se (84.216.143.87)
+Host is up (0.019s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-143-122.customers.ownit.se (84.216.143.122)
+Host is up (0.021s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-143-156.customers.ownit.se (84.216.143.156)
+Host is up (0.012s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-152-43.customers.ownit.se (84.216.152.43)
+Host is up (0.024s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-152-78.customers.ownit.se (84.216.152.78)
+Host is up (0.021s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-152-133.customers.ownit.se (84.216.152.133)
+Host is up (0.019s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-152-212.customers.ownit.se (84.216.152.212)
+Host is up (0.0068s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-152-224.customers.ownit.se (84.216.152.224)
+Host is up (0.021s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-154-42.customers.ownit.se (84.216.154.42)
+Host is up (0.019s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-154-232.customers.ownit.se (84.216.154.232)
+Host is up (0.030s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-155-41.customers.ownit.se (84.216.155.41)
+Host is up (0.048s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-160-34.customers.ownit.se (84.216.160.34)
+Host is up (0.038s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-160-100.customers.ownit.se (84.216.160.100)
+Host is up (0.011s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-160-169.customers.ownit.se (84.216.160.169)
+Host is up (0.0087s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-160-190.customers.ownit.se (84.216.160.190)
+Host is up (0.016s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-161-38.customers.ownit.se (84.216.161.38)
+Host is up (0.0077s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84.216.161.140
+Host is up (0.019s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84.216.163.74
+Host is up (0.038s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-163-143.customers.ownit.se (84.216.163.143)
+Host is up (0.017s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-163-204.customers.ownit.se (84.216.163.204)
+Host is up (0.019s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-164-128.customers.ownit.se (84.216.164.128)
+Host is up (0.0083s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-164-198.customers.ownit.se (84.216.164.198)
+Host is up (0.021s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-165-143.customers.ownit.se (84.216.165.143)
+Host is up (0.016s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-165-162.customers.ownit.se (84.216.165.162)
+Host is up (0.014s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-166-34.customers.ownit.se (84.216.166.34)
+Host is up (0.0071s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-166-203.customers.ownit.se (84.216.166.203)
+Host is up (0.012s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-167-153.customers.ownit.se (84.216.167.153)
+Host is up (0.019s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-167-174.customers.ownit.se (84.216.167.174)
+Host is up (0.019s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-167-187.customers.ownit.se (84.216.167.187)
+Host is up (0.023s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-168-51.customers.ownit.se (84.216.168.51)
+Host is up (0.011s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-168-111.customers.ownit.se (84.216.168.111)
+Host is up (0.012s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-168-120.customers.ownit.se (84.216.168.120)
+Host is up (0.0077s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84.216.168.168
+Host is up (0.014s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-171-21.customers.ownit.se (84.216.171.21)
+Host is up (0.030s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-171-150.customers.ownit.se (84.216.171.150)
+Host is up (0.026s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-171-162.customers.ownit.se (84.216.171.162)
+Host is up (0.026s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-171-165.customers.ownit.se (84.216.171.165)
+Host is up (0.025s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-171-251.customers.ownit.se (84.216.171.251)
+Host is up (0.026s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-171-252.customers.ownit.se (84.216.171.252)
+Host is up (0.025s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 84-216-172-70.customers.ownit.se (84.216.172.70)
+Host is up (0.025s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
