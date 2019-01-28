@@ -75,8 +75,8 @@ def rotate(p):
 	p[0:3:2] = np.dot(rot, p[0:3:2])
 	return p
 
-xdim = 15*16*2**3
-ydim = 15*9*2**3
+xdim = 15*16*2**2
+ydim = 15*9*2**2
 fov = 90
 M_PI = math.pi
 imageAspectRatio = xdim / ydim 
