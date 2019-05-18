@@ -119,9 +119,60 @@ void check_if_in_buddha(float4 &z, float2 &temp,
 
 __device__
 __forceinline__
+void check_if_in_buddha_fast(float4 &z, float2 &temp, 
+	unsigned int &count, float &dist,
+	unsigned int *min_mask, int mask_index) {
+
+	for (int i = 0; i < min_mask[mask_index]; i++) {
+		count++;
+		temp.x = z.x*z.x - z.y*z.y + z.z;
+		temp.y = 2*z.x*z.y + z.w;
+		z.x = temp.x;
+		z.y = temp.y;
+		dist = z.x*z.x + z.y*z.y;		
+	}
+
+	while (count < ITERS & dist < 4) {
+		count++;
+		temp.x = z.x*z.x - z.y*z.y + z.z;
+		temp.y = 2*z.x*z.y + z.w;
+		z.x = temp.x;
+		z.y = temp.y;
+		dist = z.x*z.x + z.y*z.y;
+	}
+}
+
+__device__
+__forceinline__
 void iterate(float4 z, unsigned int count, float dist, int2 ixy, 
 	float2 temp, float2 coord, float gridSize, 
-	curandState_t s, unsigned int *canvas) {
+	curandState_t s, unsigned int *canvas, unsigned int *min_mask, int mask_index) {
+	for(int i = 0; i < 10; i++) {
+
+		temp.x = curand_uniform(&s);
+		temp.y = curand_uniform(&s);
+		temp *= gridSize;
+		temp += coord;
+
+		generate_random_complex(temp, z, dist, count);
+		if (check_bulbs(z)) {
+			// check_if_in_buddha(z, temp, count, dist);
+			check_if_in_buddha_fast(z, temp, count, dist, min_mask, mask_index);
+
+			if (dist > 4) {
+				write_to_image(z, temp, ixy, count, canvas);
+				z.w *= -1;
+				write_to_image(z, temp, ixy, count, canvas);						 
+			}
+		}
+	}
+}
+
+__device__
+__forceinline__
+void check_mask(float4 z, unsigned int count, float dist, int2 ixy, 
+	float2 temp, float2 coord, float gridSize, curandState_t s, 
+	unsigned int *min_mask, unsigned int *max_mask, int mask_index) {
 	for(int i = 0; i < 1; i++) {
 
 		temp.x = curand_uniform(&s);
@@ -132,37 +183,80 @@ void iterate(float4 z, unsigned int count, float dist, int2 ixy,
 		generate_random_complex(temp, z, dist, count);
 		if (check_bulbs(z)) {
 			check_if_in_buddha(z, temp, count, dist);
-
+			// printf("%%d\n", mask_index);
 			if (dist > 4) {
-				write_to_image(z, temp, ixy, count, canvas);
-				z.w *= -1;
-				write_to_image(z, temp, ixy, count, canvas);						 
+				max_mask[mask_index] 
+					= max(max_mask[mask_index], count);
+				min_mask[mask_index] 
+					= min(min_mask[mask_index], count);
 			}
 		}
 	}
-
 }
 
 extern "C" {
 __global__
-void buddha_kernel(unsigned int *canvas, int seed, float gridSize) {
+void buddha_kernel(unsigned int *canvas, int seed, float gridSize, 
+	int gridDisc, unsigned int *min_mask, unsigned int *max_mask) {
 	int idx = blockIdx.x 
 		+ threadIdx.x * gridDim.x 
 		+ threadIdx.y * gridDim.x * blockDim.x;
 
-	int2 ixy;
+	int2 ixy, gridCoord;
 	float2 temp, coord;
 	unsigned int count;
 	float4 z;
 	float dist;
 	curandState_t s;
 	curand_init(seed, idx, 0, &s);
-
+	int mask_index;
+	// int skipped = 0;
+	gridCoord.x = 0;
 	for (coord.x = 0; coord.x < 1; coord.x += gridSize) {
+		gridCoord.y = 0;
 		for (coord.y = 0; coord.y < 1; coord.y += gridSize) {
-			iterate(z, count, dist, ixy, temp, coord, gridSize, s, canvas);
-			__syncthreads();
+			mask_index = gridCoord.y * gridDisc + gridCoord.x;
+			if (max_mask[mask_index] > 0) {
+				iterate(z, count, dist, ixy, temp, coord, 
+					gridSize, s, canvas, min_mask, mask_index);
+				__syncthreads();
+			}
+			gridCoord.y++;
 		}
+		gridCoord.x++;
+	}
+	// printf("Skipped: %%d/%%d\n", skipped, gridDisc * gridDisc);
+}
+}
+
+extern "C" {
+__global__
+void mask_kernel(unsigned int *min_mask, unsigned int *max_mask, 
+	int seed, float gridSize, int gridDisc) {
+	int idx = blockIdx.x 
+		+ threadIdx.x * gridDim.x 
+		+ threadIdx.y * gridDim.x * blockDim.x;
+
+	int2 ixy, gridCoord;
+	float2 temp, coord;
+	unsigned int count;
+	float4 z;
+	float dist;
+	curandState_t s;
+	curand_init(seed, idx, 0, &s);
+	int mask_index;
+
+	gridCoord.x = 0;
+	for (coord.x = 0; coord.x < 1; coord.x += gridSize) {
+		gridCoord.y = 0;
+		for (coord.y = 0; coord.y < 1; coord.y += gridSize) {
+			mask_index = gridCoord.y * gridDisc + gridCoord.x;
+			check_mask(z, count, dist, ixy, temp, coord, gridSize, 
+				s, min_mask, max_mask, mask_index);
+			__syncthreads();
+			gridCoord.y++;
+		}
+		gridCoord.x++;
 	}
 }
 }
