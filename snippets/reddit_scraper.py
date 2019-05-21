@@ -63,7 +63,7 @@ while True:
 			# Do stuff with each comment object
 			# Example (print comment id, epoch time of comment and subreddit and score)
 			# print(post)
-			f.write("%s\n" % (post,))
+			f.write("%s\t%s\n" % (post["created_utc"],post["url"]))
 			# print(post['id'],post['created_utc'],post['subreddit'],post['score'])
 
 	print("Safe")
