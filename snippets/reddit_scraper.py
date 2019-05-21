@@ -19,18 +19,20 @@ def get_subreddit_posts(**kwargs):
 try:
 	with open('reddit_scraper.pickle', 'rb') as handle:
 		b = pickle.load(handle)
+		start_time = b["start_time"]
 		before = b["before"]
 		count = b["count"]
 except:
 	print("Starting from scratch")
 	before = None
+	start_time = time.time()
 	count = 0
 
 while True:
 	print("Fetching", end = "\t", flush = True)
 	posts = get_subreddit_posts(
 		subreddit = "pics", 
-		size = 1, 
+		size = 500, 
 		before = before, 
 		sort = 'desc', 
 		sort_type = 'created_utc'
@@ -42,13 +44,16 @@ while True:
 	before = posts[-1]['created_utc']
 	count += 1
 	with open('reddit_scraper.pickle', 'wb') as handle:
-		pickle.dump({"before": before, "count": count}, 
+		pickle.dump({"before": before, "count": count, "start_time": start_time}, 
 			handle, protocol=pickle.HIGHEST_PROTOCOL)
 	post = posts[-1]
 	print(
-		post['id'], 
-		count, 
-		"%.1f days scraped" % ((time.time() - post['created_utc']) / 86400,), 
+		"id: %s\tcount: %d\t%.1f / %.1f days scraped" % (
+			post['id'], 
+		 	count, 
+			(start_time - post['created_utc']) / 86400, 
+			(start_time - 1201223694) / 86400
+		), 
 		end = "\t", flush = True
 	)
 
