@@ -30,7 +30,7 @@ while True:
 	print("Fetching", end = "\t", flush = True)
 	posts = get_subreddit_posts(
 		subreddit = "pics", 
-		size = 500, 
+		size = 1, 
 		before = before, 
 		sort = 'desc', 
 		sort_type = 'created_utc'
@@ -58,7 +58,7 @@ while True:
 			# Do stuff with each comment object
 			# Example (print comment id, epoch time of comment and subreddit and score)
 			# print(post)
-			f.write("%s\n" % (post["url"],))
+			f.write("%s\n" % (post,))
 			# print(post['id'],post['created_utc'],post['subreddit'],post['score'])
 
 	print("Safe")
