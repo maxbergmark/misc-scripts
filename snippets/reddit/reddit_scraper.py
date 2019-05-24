@@ -3,14 +3,6 @@ import pickle
 import requests
 import time
 
-a = {'hello': 'world'}
-
-with open('filename.pickle', 'wb') as handle:
-	pickle.dump(a, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-with open('filename.pickle', 'rb') as handle:
-	b = pickle.load(handle)
-
 def get_subreddit_posts(**kwargs):
 	r = requests.get("https://api.pushshift.io/reddit/search/submission/",params=kwargs)
 	data = r.json()
