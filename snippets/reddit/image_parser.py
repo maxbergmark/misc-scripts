@@ -12,7 +12,7 @@ def url_to_image(url):
 	# it into OpenCV format
 	# resp = urllib.urlopen(url)
 	try:
-		resp = requests.get(url)
+		resp = requests.get(url, timeout = 10)
 		image = np.asarray(bytearray(resp.content), dtype="uint8")
 		image = cv2.imdecode(image, cv2.IMREAD_COLOR)
 	 
@@ -47,8 +47,8 @@ def get_stamp(image_data):
 		return -1
 	return int(timestamp)
 
-def get_image_format(files):
-	with Pool(cpu_count()) as pool:
+def get_image_format(files, processes):
+	with Pool(processes) as pool:
 		results = pool.starmap(parse_images, files)
 	return results
 
@@ -59,13 +59,13 @@ def process_batch(files, batch, batch_size, processes, data):
 	for i in range(len(splits)):
 		splits[i] = (splits[i],)
 	t0 = time.time()
-	colors = get_image_format(splits)
+	colors = get_image_format(splits, processes)
 	flat_colors = [c for i in colors for c in i]
 	t1 = time.time()
 	for c in flat_colors:
 		data[str(c[0]) + c[1]] = c
 		# print(c)
-	print("%4.1f images/second" % (limit / (t1-t0),), end = "\t", flush = True)
+	print("%4.1f images/second" % (batch_size / (t1-t0),), end = "\t", flush = True)
 
 
 try:
@@ -83,11 +83,11 @@ except:
 print("%d images already parsed" % len(data))
 print("Starting from batch %d" % batch)
 
-processes = cpu_count()
-batch_size = 100
+processes = cpu_count()*2
+batch_size = 1000
 
 files = []
-limit = 100
+# limit = 100
 
 with open("reddit_post_urls.txt", "r") as f:
 	count = 0
