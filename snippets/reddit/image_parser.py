@@ -1,11 +1,11 @@
 from multiprocessing import Pool, cpu_count
 import matplotlib.pyplot as plt
 import numpy as np
-# import urllib
 import requests
 import time
 import cv2
 import pickle
+from datetime import datetime
 
 def url_to_image(url):
 	# download the image, convert it to a NumPy array, and then read
@@ -73,18 +73,19 @@ try:
 		b = pickle.load(handle)
 		start_time = b["start_time"]
 		batch = b["batch"]
-		data = b["data"]
+		# data = b["data"]
 except:
 	print("Starting from scratch")
-	data = {}
+	# data = {}
 	start_time = time.time()
 	batch = 0
 
-print("%d images already parsed" % len(data))
+# print("%d images already parsed" % len(data))
 print("Starting from batch %d" % batch)
 
 processes = cpu_count()*2
 batch_size = 1000
+data = {}
 
 files = []
 # limit = 100
@@ -102,11 +103,20 @@ nr_lines = len(files)
 tot_batches = nr_lines // batch_size
 
 for _ in range(batch, nr_lines // batch_size + 1):
-	print("Processing batch %5d/%5d" % (batch, tot_batches), end = "\t", flush = True)
+	print("%s\t%5d/%5d" % (
+		datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
+		batch, 
+		tot_batches
+	), end = "\t", flush = True)
 	process_batch(files, batch, batch_size, processes, data)
 	batch += 1
+	with open('image_parser_results.txt', 'a') as f:
+		for key in sorted(data.keys()):
+			f.write(str(data[key]) + "\n")
+		f.flush()
+	data = {}
 	with open('image_parser.pickle', 'wb') as handle:
-		pickle.dump({"batch": batch, "data": data, "start_time": start_time}, 
-			handle, protocol=pickle.HIGHEST_PROTOCOL)
+		pickle.dump({"batch": batch, "start_time": start_time}, 
+			handle, protocol = pickle.HIGHEST_PROTOCOL)
 	print("SAFE")
 
