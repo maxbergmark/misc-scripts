@@ -15,7 +15,7 @@ def url_to_image(url):
 		resp = requests.get(url, timeout = 10)
 		image = np.asarray(bytearray(resp.content), dtype="uint8")
 		image = cv2.imdecode(image, cv2.IMREAD_COLOR)
-	 
+
 		# return the image
 		if (image is not None and len(image.shape) == 3):
 			avgs = np.mean(image, axis = (0, 1))
@@ -99,9 +99,10 @@ with open("reddit_post_urls.txt", "r") as f:
 	# files = [(l,) for l in f.read().split("\n")]
 
 nr_lines = len(files)
+tot_batches = nr_lines // batch_size
 
 for _ in range(batch, nr_lines // batch_size + 1):
-	print("Processing batch %3d" % batch, end = "\t", flush = True)
+	print("Processing batch %5d/%5d" % (batch, tot_batches), end = "\t", flush = True)
 	process_batch(files, batch, batch_size, processes, data)
 	batch += 1
 	with open('image_parser.pickle', 'wb') as handle:
