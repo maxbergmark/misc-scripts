@@ -2,6 +2,7 @@
 import pickle
 import requests
 import time
+import json
 
 def get_subreddit_posts(**kwargs):
 	r = requests.get("https://api.pushshift.io/reddit/search/submission/",params=kwargs)
@@ -49,13 +50,13 @@ while True:
 		end = "\t", flush = True
 	)
 
-	with open('reddit_post_urls.txt', 'a') as f:
+	with open('reddit_post_jsons.txt', 'a') as f:
 		for post in posts:
 			# before = post['created_utc'] # This will keep track of your position for the next call in the while loop
 			# Do stuff with each comment object
 			# Example (print comment id, epoch time of comment and subreddit and score)
 			# print(post)
-			f.write("%s\t%s\n" % (post["created_utc"],post["url"]))
+			f.write("%s\n" % (json.dumps(post),))
 			# print(post['id'],post['created_utc'],post['subreddit'],post['score'])
 
 	print("Safe")
