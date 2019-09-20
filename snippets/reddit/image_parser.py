@@ -100,7 +100,10 @@ data = {}
 files = []
 # limit = 100
 
-with open("reddit_post_jsons.txt", "r") as f:
+directory = "/home/max/storage/"
+directory = "./"
+
+with open(directory + "reddit_post_jsons.txt", "r") as f:
 	count = 0
 	for l in f:
 		files.append(json.loads(l.strip())["url"])
