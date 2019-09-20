@@ -3,37 +3,47 @@ import matplotlib.pyplot as plt
 import numpy as np
 import requests
 import time
-import cv2
+# import cv2
 import pickle
 from datetime import datetime
+import json
+import urllib.request
 
 def url_to_image(url):
 	# download the image, convert it to a NumPy array, and then read
 	# it into OpenCV format
 	# resp = urllib.urlopen(url)
 	try:
-		resp = requests.get(url, timeout = 10)
-		image = np.asarray(bytearray(resp.content), dtype="uint8")
-		image = cv2.imdecode(image, cv2.IMREAD_COLOR)
+		filename = url.split("/")[-1]
+		# print("saving %s to %s" % (url, filename))
+		directory = "/home/max/storage/images/"
+		# directory = "images/"
+		urllib.request.urlretrieve(url, directory + filename)
+		# resp = requests.get(url, timeout = 10)
+		# image = np.asarray(bytearray(resp.content), dtype="uint8")
+		# image = cv2.imdecode(image, cv2.IMREAD_COLOR)
 
 		# return the image
-		if (image is not None and len(image.shape) == 3):
-			avgs = np.mean(image, axis = (0, 1))
-			return avgs
-	except:
+		# if (image is not None and len(image.shape) == 3):
+			# return resp
+			# avgs = np.mean(image, axis = (0, 1))
+			# return avgs
+	except Exception as e:
+		# print("exception:", e)
 		pass
-	return None
+	# return None
 
 def parse_images(files):
 	res = []
-	for image_data in files:
-		if image_data.count("\t") != 1:
-			continue
-		timestamp, url = image_data.split("\t")
+	for url in files:
+		# print(image_data)
+		# if image_data.count("\t") != 1:
+			# continue
+		# timestamp, url = image_data.split("\t")
 		if url.endswith(".jpg") or url.endswith(".png") or url.startswith("https://i.reddituploads.com"):
-			data = url_to_image(url)
-			if data is not None:
-				res.append((get_stamp(image_data), url, data))
+			url_to_image(url)
+			# if data is not None:
+				# res.append((get_stamp(image_data), url, data))
 		if url.startswith("https://imgur.com") or url.startswith("http://imgur.com"):
 			continue
 		# print(url)
@@ -84,16 +94,16 @@ except:
 print("Starting from batch %d" % batch)
 
 processes = cpu_count()*2
-batch_size = 1000
+batch_size = 100
 data = {}
 
 files = []
 # limit = 100
 
-with open("reddit_post_urls.txt", "r") as f:
+with open("reddit_post_jsons.txt", "r") as f:
 	count = 0
 	for l in f:
-		files.append(l.strip())
+		files.append(json.loads(l.strip())["url"])
 		count += 1
 		# if count == limit:
 			# break
@@ -110,10 +120,10 @@ for _ in range(batch, nr_lines // batch_size + 1):
 	), end = "\t", flush = True)
 	process_batch(files, batch, batch_size, processes, data)
 	batch += 1
-	with open('image_parser_results.txt', 'a') as f:
-		for key in sorted(data.keys()):
-			f.write(str(data[key]) + "\n")
-		f.flush()
+	# with open('image_parser_results.txt', 'a') as f:
+		# for key in sorted(data.keys()):
+			# f.write(str(data[key]) + "\n")
+		# f.flush()
 	data = {}
 	with open('image_parser.pickle', 'wb') as handle:
 		pickle.dump({"batch": batch, "start_time": start_time}, 

@@ -50,12 +50,11 @@ while True:
 		end = "\t", flush = True
 	)
 
-	with open('reddit_post_jsons.txt', 'a') as f:
+	directory = "/home/max/storage/"
+	# directory = "./"
+
+	with open(directory + 'reddit_post_jsons.txt', 'a') as f:
 		for post in posts:
-			# before = post['created_utc'] # This will keep track of your position for the next call in the while loop
-			# Do stuff with each comment object
-			# Example (print comment id, epoch time of comment and subreddit and score)
-			# print(post)
 			f.write("%s\n" % (json.dumps(post),))
 			# print(post['id'],post['created_utc'],post['subreddit'],post['score'])
 
